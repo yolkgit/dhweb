@@ -1,0 +1,62 @@
+{
+  "appSettings": {
+    "youtubeApiKey": "AIzaSyANDclymGXM1DbtZNCiKHEYBQBgpF6D17Q"
+  },
+  "playlists": {
+    "ASPHALT": "PLwGOZuWJG0bH8HxS2fksOG63uVJLpL6r2",
+    "CONCRETE": "",
+    "NON_SLIP": "",
+    "DEICING": ""
+  },
+  "certifications": [
+    {
+      "id": "1",
+      "title": "ISO 9001 품질경영시스템",
+      "issuer": "KOSRE",
+      "type": "CERTIFICATE",
+      "pdfUrl": "/uploads/1770255917878-91840743.pdf"
+    },
+    {
+      "id": "2",
+      "title": "환경표지인증 (EZ RPM)",
+      "issuer": "한국환경산업기술원",
+      "type": "CERTIFICATE"
+    },
+    {
+      "id": "3",
+      "title": "단체표준인증 (미끄럼방지)",
+      "issuer": "한국도로교통협회",
+      "type": "CERTIFICATE"
+    },
+    {
+      "id": "4",
+      "title": "특허: 도로 보수재 및 코팅제",
+      "issuer": "특허청",
+      "type": "PATENT"
+    },
+    {
+      "id": "5",
+      "title": "벤처기업확인서",
+      "issuer": "중소기업진흥공단",
+      "type": "CERTIFICATE"
+    }
+  ],
+  "companyInfo": {
+    "name": "(주)다현산업",
+    "englishName": "DAHYEON INDUSTRY CO.,LTD.",
+    "headerTitle": "주식회",
+    "headerSubtitle": "INDUSTRY",
+    "footerDesc": "다현산업은 끊임없는 기술 혁신으로\n대한민국의 도로 안전을 책임집니다.",
+    "address": "충북 음성군 삼성면 대덕로 289",
+    "phone": "043-883-0602",
+    "fax": "043-882-0818",
+    "slogan": "최고의 품질과 기술력을 바탕으로 미래형 도로문화를 창조합니다.",
+    "vision": [
+      "우수한 품질",
+      "착한 가격",
+      "정확한 납기",
+      "빠른 서비스"
+    ]
+  }
+}}
+}

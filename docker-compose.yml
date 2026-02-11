@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  # Backend Server
+  server:
+    build:
+      context: ./server
+    ports:
+      - "3004:3004"
+    volumes:
+      - ./server/uploads:/app/uploads
+      - ./server/dev.db:/app/dev.db
+      - ./server/database.json:/app/database.json
+    restart: always
+
+  # Frontend Client
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3003:80"
+    depends_on:
+      - server
+    restart: always

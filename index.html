@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dahyeon Industry - Future Road Culture</title>
+    <link rel="icon" id="favicon" href="/favicon.ico" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gowun+Dodum&family=Inter:wght@300;400;600;700;800&family=Nanum+Gothic:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "Noto Sans KR", "sans-serif"],
+            },
+            colors: {
+              brand: {
+                navy: "#0f172a",
+                green: "#059669",
+                blue: "#2563eb",
+                accent: "#f59e0b",
+              },
+            },
+            keyframes: {
+              "fade-in-up": {
+                "0%": { opacity: "0", transform: "translateY(20px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+            },
+            animation: {
+              "fade-in-up": "fade-in-up 0.8s ease-out forwards",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: "Noto Sans KR", sans-serif;
+        background-color: #f8fafc;
+        /* Prevent Google Translate from shifting the page body */
+        top: 0 !important;
+        margin-top: 0 !important;
+        position: static !important;
+      }
+
+      /* Aggressively hide the Google Translate Toolbar (Iframe & Divs) */
+      iframe.goog-te-banner-frame {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        width: 0 !important;
+      }
+
+      .goog-te-banner-frame.skiptranslate {
+        display: none !important;
+      }
+
+      .goog-te-banner-frame {
+        display: none !important;
+      }
+      
+      /* Hide top spacing artifacts */
+      body > .skiptranslate {
+        display: none !important;
+      }
+      
+      .goog-te-balloon-frame {
+        display: none !important;
+      }
+
+      #goog-gt-tt {
+        display: none !important;
+        visibility: hidden !important;
+      }
+
+      .goog-text-highlight {
+        background: none !important;
+        box-shadow: none !important;
+      }
+
+      #google_translate_element {
+        display: none;
+      }
+      
+      .goog-tooltip {
+        display: none !important;
+      }
+    </style>
+    <script type="text/javascript">
+      // Auto-detect browser language and set cookie if not set
+      (function () {
+        if (document.cookie.indexOf("googtrans") === -1) {
+          var userLang = navigator.language || navigator.userLanguage;
+          // If browser is NOT Korean, default to English translation
+          if (userLang && !userLang.startsWith("ko")) {
+            document.cookie = "googtrans=/ko/en; path=/";
+          }
+        }
+      })();
+
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement(
+          {
+            pageLanguage: "ko",
+            includedLanguages: "en,ko",
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+            autoDisplay: false,
+          },
+          "google_translate_element",
+        );
+      }
+    </script>
+    <!-- FIX: Use https:// protocol explicitly -->
+    <script
+      type="text/javascript"
+      src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+    ></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+          "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+          "react/": "https://esm.sh/react@^19.2.4/",
+          "react": "https://esm.sh/react@^19.2.4",
+          "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+          "pdfjs-dist": "https://esm.sh/pdfjs-dist@3.11.174"
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="/index.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="google_translate_element"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

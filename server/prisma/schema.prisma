@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model CompanyInfo {
+  id              Int      @id @default(1)
+  name            String
+  englishName     String?
+  ceo             String?
+  address         String?
+  phone           String?
+  fax             String?
+  email           String?
+  bizNum          String?
+  headerTitle     String?
+  headerSubtitle  String?
+  footerDesc      String?
+  slogan          String?
+  vision          String   @db.Text // JSON string for string[]
+  kakaoChannelUrl String?
+  companyViewUrl  String?
+  updatedAt       DateTime @updatedAt
+}
+
+model Category {
+  id          String   @id
+  label       String
+  playlistId  String?
+  products    Product[]
+}
+
+model Product {
+  id               String   @id @default(uuid())
+  name             String
+  categoryId       String
+  category         Category @relation(fields: [categoryId], references: [id])
+  description      String   @db.Text
+  features         String   @db.Text // JSON string
+  specs            String?  @db.Text // JSON string
+  specTable        String?  @db.Text // JSON string
+  imageUrl         String
+  isNew            Boolean  @default(false)
+  isEco            Boolean  @default(false)
+  specUrl          String?
+  msdsUrl          String?
+  certificationMarkIds String? @db.Text // JSON string or comma sep
+  createdAt        DateTime @default(now())
+}
+
+model Certification {
+  id      String @id @default(uuid())
+  title   String
+  issuer  String
+  type    String // 'PATENT' | 'CERTIFICATE' | 'TEST_REPORT'
+  pdfUrl  String?
+  createdAt DateTime @default(now())
+}
+
+model CertificationMark {
+  id       String @id @default(uuid())
+  name     String
+  imageUrl String
+  createdAt DateTime @default(now())
+}
+
+model HeroSlide {
+  id              String  @id @default(uuid())
+  type            String
+  src             String
+  poster          String?
+  title           String
+  subtitle        String
+  desc            String  @db.Text
+  order           Int     @default(0)
+  fadeOutDuration Float   @default(0)
+  duration        Float   @default(6)
+}
+
+model LabEquipment {
+  id       String  @id @default(uuid())
+  title    String
+  desc     String  @db.Text
+  iconName String
+  imageUrl String?
+}
+
+model Playlist {
+  id       String @id @default(uuid())
+  key      String @unique // e.g. "ASPHALT" or CategoryID
+  value    String
+}
+
+model AppSettings {
+  id            Int     @id @default(1)
+  youtubeApiKey String?
+}
+
+model DesignSettings {
+  id               Int    @id @default(1)
+  fontFamily       String @default("Noto Sans KR")
+  fontSize         String @default("medium")
+  headerFontFamily String @default("Noto Sans KR")
+  headerTitleSize  String @default("medium")
+  headerFontSize   String @default("medium") 
+  footerFontFamily String @default("Noto Sans KR")
+  footerFontSize   String @default("small")
+}
+
+model Faq {
+  id       Int    @id @default(autoincrement())
+  category String? // '제품' | '배송' | '기타' etc
+  question String  @db.Text
+  answer   String  @db.Text
+}
+
+model LogoSettings {
+  id             Int     @id @default(1)
+  useCustomLabel Boolean @default(false)
+  defaultUrl     String?
+  whiteUrl       String?
+}
