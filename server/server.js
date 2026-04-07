@@ -68,7 +68,9 @@ app.get('/api/content', async (req, res) => {
          certificationMarks,
          labEquipment,
          faqs,
-         logoSettings
+         logoSettings,
+         branches,
+         calculatorSettings
      ] = await Promise.all([
          prisma.appSettings.findFirst(),
          prisma.companyInfo.findFirst(),
@@ -80,7 +82,9 @@ app.get('/api/content', async (req, res) => {
          prisma.certificationMark.findMany(),
          prisma.labEquipment.findMany(),
          prisma.faq.findMany(),
-         prisma.logoSettings.findFirst()
+         prisma.logoSettings.findFirst(),
+         prisma.branch.findMany(),
+         prisma.calculatorSettings.findFirst()
      ]);
 
      // Reconstruct playlists map from categories
@@ -117,7 +121,9 @@ app.get('/api/content', async (req, res) => {
          certificationMarks: certificationMarks || [],
          labEquipment: labEquipment || [],
          faqs: faqs || [],
-         logoSettings: logoSettings || {}
+         logoSettings: logoSettings || {},
+         branches: branches || [],
+         calculatorSettings: calculatorSettings || {}
      });
   } catch (error) {
     console.error("Failed to fetch data:", error);
@@ -441,6 +447,36 @@ app.post("/api/data/:key", async (req, res) => {
             create: data
         });
         return res.json(updated);
+    }
+
+    if (key === 'calculatorSettings') {
+        const { id, ...updateData } = data;
+        const updated = await prisma.calculatorSettings.upsert({
+            where: { id: 1 },
+            update: updateData,
+            create: {
+                id: 1,
+                ...updateData
+            }
+        });
+        return res.json(updated);
+    }
+
+    if (key === 'branches') {
+        await prisma.$transaction(async (tx) => {
+            for (const item of data) {
+                await tx.branch.upsert({
+                    where: { id: item.id },
+                    update: { name: item.name, address: item.address, phone: item.phone },
+                    create: { id: item.id, name: item.name, address: item.address, phone: item.phone }
+                });
+            }
+            const newIds = data.map(d => d.id);
+            await tx.branch.deleteMany({
+                where: { id: { notIn: newIds } }
+            });
+        });
+        return res.json({ success: true });
     }
 
     // For Arrays: We perform a full sync (Delete all + Create all) OR Upsert loops.

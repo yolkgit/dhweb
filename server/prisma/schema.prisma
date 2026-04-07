@@ -127,3 +127,17 @@ model LogoSettings {
   defaultUrl     String?
   whiteUrl       String?
 }
+
+model Branch {
+  id      String @id
+  name    String
+  address String
+  phone   String
+}
+
+model CalculatorSettings {
+  id             Int     @id @default(1)
+  bagImageUrl    String?
+  palletImageUrl String?
+  density        Float
+}
