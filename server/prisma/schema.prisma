@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:../dev.db"
 }
 
 model CompanyInfo {
@@ -24,14 +24,14 @@ model CompanyInfo {
   headerSubtitle  String?
   footerDesc      String?
   slogan          String?
-  vision          String   @db.Text // JSON string for string[]
+  vision          String   // JSON string for string[]
   kakaoChannelUrl String?
   companyViewUrl  String?
   updatedAt       DateTime @updatedAt
 }
 
 model Category {
-  id          String   @id
+  id          String    @id
   label       String
   playlistId  String?
   products    Product[]
@@ -42,16 +42,16 @@ model Product {
   name             String
   categoryId       String
   category         Category @relation(fields: [categoryId], references: [id])
-  description      String   @db.Text
-  features         String   @db.Text // JSON string
-  specs            String?  @db.Text // JSON string
-  specTable        String?  @db.Text // JSON string
+  description      String   
+  features         String   // JSON string
+  specs            String?  // JSON string
+  specTable        String?  // JSON string
   imageUrl         String
   isNew            Boolean  @default(false)
   isEco            Boolean  @default(false)
   specUrl          String?
   msdsUrl          String?
-  certificationMarkIds String? @db.Text // JSON string or comma sep
+  certificationMarkIds String? // JSON string or comma sep
   createdAt        DateTime @default(now())
 }
 
@@ -78,7 +78,7 @@ model HeroSlide {
   poster          String?
   title           String
   subtitle        String
-  desc            String  @db.Text
+  desc            String  
   order           Int     @default(0)
   fadeOutDuration Float   @default(0)
   duration        Float   @default(6)
@@ -87,7 +87,7 @@ model HeroSlide {
 model LabEquipment {
   id       String  @id @default(uuid())
   title    String
-  desc     String  @db.Text
+  desc     String  
   iconName String
   imageUrl String?
 }
@@ -117,8 +117,8 @@ model DesignSettings {
 model Faq {
   id       Int    @id @default(autoincrement())
   category String? // '제품' | '배송' | '기타' etc
-  question String  @db.Text
-  answer   String  @db.Text
+  question String  
+  answer   String  
 }
 
 model LogoSettings {

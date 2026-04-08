@@ -78,6 +78,21 @@ const api = {
     } catch (e) {
       console.error(`Failed to save ${key}`, e);
     }
+  },
+  create: async (endpoint: string, data: any) => {
+    try {
+      await fetch(`/api/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    } catch (e) { console.error(`Failed to create ${endpoint}`, e); }
+  },
+  update: async (endpoint: string, id: string | number, data: any) => {
+    try {
+      await fetch(`/api/${endpoint}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    } catch (e) { console.error(`Failed to update ${endpoint}`, e); }
+  },
+  delete: async (endpoint: string, id: string | number) => {
+    try {
+      await fetch(`/api/${endpoint}/${id}`, { method: 'DELETE' });
+    } catch (e) { console.error(`Failed to delete ${endpoint}`, e); }
   }
 };
 
@@ -160,94 +175,79 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addCategory = (category: Category) => {
-    const newData = [...categories, category];
-    setCategories(newData);
-    api.save('categories', newData);
+    setCategories(prev => [...prev, category]);
+    api.create('categories', category);
   };
   const updateCategory = (category: Category) => {
-    const newData = categories.map(c => c.id === category.id ? category : c);
-    setCategories(newData);
-    api.save('categories', newData);
+    setCategories(prev => prev.map(c => c.id === category.id ? category : c));
+    api.update('categories', category.id, category);
   };
   const deleteCategory = (id: string) => {
-    const newData = categories.filter(c => c.id !== id);
-    setCategories(newData);
-    api.save('categories', newData);
+    setCategories(prev => prev.filter(c => c.id !== id));
+    api.delete('categories', id);
   };
 
   const addProduct = (product: Product) => {
-    const newData = [...products, product];
-    setProducts(newData);
-    api.save('products', newData);
+    setProducts(prev => [...prev, product]);
+    api.create('products', product);
   };
   const updateProduct = (updatedProduct: Product) => {
-    const newData = products.map(p => p.id === updatedProduct.id ? updatedProduct : p);
-    setProducts(newData);
-    api.save('products', newData);
+    setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+    api.update('products', updatedProduct.id, updatedProduct);
   };
   const deleteProduct = (id: string) => {
-    const newData = products.filter(p => p.id !== id);
-    setProducts(newData);
-    api.save('products', newData);
+    setProducts(prev => prev.filter(p => p.id !== id));
+    api.delete('products', id);
   };
 
   const updatePlaylist = (categoryId: string, playlistId: string) => {
     const newData = { ...playlists, [categoryId]: playlistId };
     setPlaylists(newData);
-    api.save('playlists', newData);
+    api.save('playlists', newData); // Keep as is since backend handles it as an object
   };
 
   const updateFaqs = (newFaqs: typeof INITIAL_FAQS) => {
     setFaqs(newFaqs);
-    api.save('faqs', newFaqs);
+    api.save('faqs', newFaqs); // Keeping bulk since faqs array lacks precise IDs conceptually in frontend
   };
 
   const addCertification = (cert: Certification) => {
-    const newData = [...certifications, cert];
-    setCertifications(newData);
-    api.save('certifications', newData);
+    setCertifications(prev => [...prev, cert]);
+    api.create('certifications', cert);
   };
   const updateCertification = (cert: Certification) => {
-    const newData = certifications.map(c => c.id === cert.id ? cert : c);
-    setCertifications(newData);
-    api.save('certifications', newData);
+    setCertifications(prev => prev.map(c => c.id === cert.id ? cert : c));
+    api.update('certifications', cert.id, cert);
   };
   const deleteCertification = (id: string) => {
-    const newData = certifications.filter(c => c.id !== id);
-    setCertifications(newData);
-    api.save('certifications', newData);
+    setCertifications(prev => prev.filter(c => c.id !== id));
+    api.delete('certifications', id);
   };
 
   const addLabEquipment = (item: LabEquipment) => {
-    const newData = [...labEquipment, item];
-    setLabEquipment(newData);
-    api.save('labEquipment', newData);
+    setLabEquipment(prev => [...prev, item]);
+    api.create('lab-equipment', item);
   };
   const updateLabEquipment = (item: LabEquipment) => {
-    const newData = labEquipment.map(l => l.id === item.id ? item : l);
-    setLabEquipment(newData);
-    api.save('labEquipment', newData);
+    setLabEquipment(prev => prev.map(l => l.id === item.id ? item : l));
+    api.update('lab-equipment', item.id, item);
   };
   const deleteLabEquipment = (id: string) => {
-    const newData = labEquipment.filter(l => l.id !== id);
-    setLabEquipment(newData);
-    api.save('labEquipment', newData);
+    setLabEquipment(prev => prev.filter(l => l.id !== id));
+    api.delete('lab-equipment', id);
   };
 
   const addHeroSlide = (slide: HeroSlide) => {
-    const newData = [...heroSlides, slide];
-    setHeroSlides(newData);
-    api.save('heroSlides', newData);
+    setHeroSlides(prev => [...prev, slide]);
+    api.create('hero-slides', slide);
   };
   const updateHeroSlide = (slide: HeroSlide) => {
-    const newData = heroSlides.map(s => s.id === slide.id ? slide : s);
-    setHeroSlides(newData);
-    api.save('heroSlides', newData);
+    setHeroSlides(prev => prev.map(s => s.id === slide.id ? slide : s));
+    api.update('hero-slides', slide.id, slide);
   };
   const deleteHeroSlide = (id: string) => {
-    const newData = heroSlides.filter(s => s.id !== id);
-    setHeroSlides(newData);
-    api.save('heroSlides', newData);
+    setHeroSlides(prev => prev.filter(s => s.id !== id));
+    api.delete('hero-slides', id);
   };
 
   const updateLogoSettings = (settings: LogoSettings) => {
@@ -264,19 +264,16 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addCertificationMark = (mark: CertificationMark) => {
-    const newData = [...certificationMarks, mark];
-    setCertificationMarks(newData);
-    api.save('certificationMarks', newData);
+    setCertificationMarks(prev => [...prev, mark]);
+    api.create('certification-marks', mark);
   };
   const updateCertificationMark = (mark: CertificationMark) => {
-    const newData = certificationMarks.map(m => m.id === mark.id ? mark : m);
-    setCertificationMarks(newData);
-    api.save('certificationMarks', newData);
+    setCertificationMarks(prev => prev.map(m => m.id === mark.id ? mark : m));
+    api.update('certification-marks', mark.id, mark);
   };
   const deleteCertificationMark = (id: string) => {
-    const newData = certificationMarks.filter(m => m.id !== id);
-    setCertificationMarks(newData);
-    api.save('certificationMarks', newData);
+    setCertificationMarks(prev => prev.filter(m => m.id !== id));
+    api.delete('certification-marks', id);
   };
 
   const updateCalculatorSettings = (settings: CalculatorSettings) => {
@@ -285,19 +282,16 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addBranch = (branch: Branch) => {
-    const newData = [...branches, branch];
-    setBranches(newData);
-    api.save('branches', newData);
+    setBranches(prev => [...prev, branch]);
+    api.create('branches', branch);
   };
   const updateBranch = (branch: Branch) => {
-    const newData = branches.map(b => b.id === branch.id ? branch : b);
-    setBranches(newData);
-    api.save('branches', newData);
+    setBranches(prev => prev.map(b => b.id === branch.id ? branch : b));
+    api.update('branches', branch.id, branch);
   };
   const deleteBranch = (id: string) => {
-    const newData = branches.filter(b => b.id !== id);
-    setBranches(newData);
-    api.save('branches', newData);
+    setBranches(prev => prev.filter(b => b.id !== id));
+    api.delete('branches', id);
   };
 
   const resetToDefaults = () => {

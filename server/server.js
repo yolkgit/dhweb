@@ -18,7 +18,7 @@ const UPLOADS_DIR = path.join(__dirname, "uploads");
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: "50mb" })); // Increase limit for large JSON payloads
+app.use(express.json({ limit: "5mb" })); // Reduced limit after removing bulk updates
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(UPLOADS_DIR));
 app.use(express.static(path.join(__dirname, "../dist"))); // Serve Frontend Build
@@ -133,29 +133,43 @@ app.get('/api/content', async (req, res) => {
 
 // --- Category & Playlist Management ---
 app.post('/api/categories', async (req, res) => {
-   try {
-       const categories = req.body; // Array of Categories
-       // This is a bulk update logic request. 
-       // Simplest strategy: Sync entire list (Upsert all, delete missing?)
-       // Or the frontend sends updates individually.
-       // Current frontend sends the WHOLE array of categories.
-       
-       // Strategy: Transaction to handle full sync is safer but complex logic.
-       // Let's assume we update them one by one or reconstruct.
-       // Since the frontend manages the ID and ordering is implicitly index based,
-       // but here ID is primary key.
-       
-       for (const cat of categories) {
-           await prisma.category.upsert({
-               where: { id: cat.id },
-               update: { label: cat.label }, // Playlist is separate
-               create: { id: cat.id, label: cat.label }
-           });
-       }
-       // If categories were deleted in UI, we might need to delete them in DB.
-       // For now, upsert is safe.
-       res.json({ success: true });
-   } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
+    try {
+        const cat = req.body;
+        // If it's an array (legacy bulk update), handle it gracefully
+        if (Array.isArray(cat)) {
+            for (const c of cat) {
+                await prisma.category.upsert({
+                    where: { id: c.id },
+                    update: { label: c.label },
+                    create: { id: c.id, label: c.label }
+                });
+            }
+            return res.json({ success: true });
+        }
+        
+        const result = await prisma.category.create({
+             data: { id: cat.id, label: cat.label }
+        });
+        res.json(result);
+    } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
+});
+
+app.put('/api/categories/:id', async (req, res) => {
+    try {
+        const cat = req.body;
+        const result = await prisma.category.update({
+            where: { id: req.params.id },
+            data: { label: cat.label }
+        });
+        res.json(result);
+    } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
+});
+
+app.delete('/api/categories/:id', async (req, res) => {
+    try {
+        await prisma.category.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch(e) { res.status(500).json({error: "Failed"}); }
 });
 
 app.post('/api/playlists', async (req, res) => {
@@ -312,6 +326,21 @@ app.post('/api/certifications', async (req, res) => {
         res.json(result);
     } catch(e) { res.status(500).json({error: "Failed"}); }
 });
+app.put('/api/certifications/:id', async (req, res) => {
+    try {
+        const cert = req.body;
+        const result = await prisma.certification.update({
+             where: { id: req.params.id },
+             data: {
+                 title: cert.title,
+                 issuer: cert.issuer,
+                 type: cert.type,
+                 pdfUrl: cert.pdfUrl
+             }
+        });
+        res.json(result);
+    } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
+});
 app.delete('/api/certifications/:id', async (req, res) => {
     try {
         await prisma.certification.delete({ where: { id: req.params.id } });
@@ -328,6 +357,16 @@ app.post('/api/certification-marks', async (req, res) => {
          });
          res.json(result);
      } catch(e) { res.status(500).json({error: "Failed"}); }
+});
+app.put('/api/certification-marks/:id', async (req, res) => {
+    try {
+        const mark = req.body;
+        const result = await prisma.certificationMark.update({
+             where: { id: req.params.id },
+             data: { name: mark.name, imageUrl: mark.imageUrl }
+        });
+        res.json(result);
+    } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
 });
 app.delete('/api/certification-marks/:id', async (req, res) => {
     try {
@@ -346,9 +385,73 @@ app.post('/api/lab-equipment', async (req, res) => {
         res.json(result);
     } catch(e) { res.status(500).json({error: "Failed"}); }
 });
+app.put('/api/lab-equipment/:id', async (req, res) => {
+    try {
+        const eq = req.body;
+        const result = await prisma.labEquipment.update({
+             where: { id: req.params.id },
+             data: { title: eq.title, desc: eq.desc, iconName: eq.iconName, imageUrl: eq.imageUrl }
+        });
+        res.json(result);
+    } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
+});
 app.delete('/api/lab-equipment/:id', async (req, res) => {
     try {
         await prisma.labEquipment.delete({ where: { id: req.params.id } });
+         res.json({ success: true });
+    } catch(e) { res.status(500).json({error: "Failed"}); }
+});
+
+// --- Branches ---
+app.post('/api/branches', async (req, res) => {
+    try {
+        const b = req.body;
+        const result = await prisma.branch.create({
+            data: { id: b.id, name: b.name, address: b.address, phone: b.phone }
+        });
+        res.json(result);
+    } catch(e) { res.status(500).json({error: "Failed"}); }
+});
+app.put('/api/branches/:id', async (req, res) => {
+    try {
+        const b = req.body;
+        const result = await prisma.branch.update({
+             where: { id: req.params.id },
+             data: { name: b.name, address: b.address, phone: b.phone }
+        });
+        res.json(result);
+    } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
+});
+app.delete('/api/branches/:id', async (req, res) => {
+    try {
+        await prisma.branch.delete({ where: { id: req.params.id } });
+         res.json({ success: true });
+    } catch(e) { res.status(500).json({error: "Failed"}); }
+});
+
+// --- FAQs ---
+app.post('/api/faqs', async (req, res) => {
+    try {
+        const f = req.body;
+        const result = await prisma.faq.create({
+            data: { question: f.question, answer: f.answer, category: f.category }
+        });
+        res.json(result);
+    } catch(e) { res.status(500).json({error: "Failed"}); }
+});
+app.put('/api/faqs/:id', async (req, res) => {
+    try {
+        const f = req.body;
+        const result = await prisma.faq.update({
+             where: { id: parseInt(req.params.id, 10) },
+             data: { question: f.question, answer: f.answer, category: f.category }
+        });
+        res.json(result);
+    } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
+});
+app.delete('/api/faqs/:id', async (req, res) => {
+    try {
+        await prisma.faq.delete({ where: { id: parseInt(req.params.id, 10) } });
          res.json({ success: true });
     } catch(e) { res.status(500).json({error: "Failed"}); }
 });
