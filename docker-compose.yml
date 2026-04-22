@@ -6,7 +6,7 @@ services:
     build:
       context: ./server
     ports:
-      - "3004:3004"
+      - "3005:3004"
     volumes:
       - ./server/uploads:/app/uploads
     restart: always
@@ -17,7 +17,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3003:80"
+      - "3004:80"
     depends_on:
       - server
     restart: always

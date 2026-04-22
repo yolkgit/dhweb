@@ -29,33 +29,41 @@ export const useYouTubeVideos = (categoryId: string) => {
 
         // 유튜브 RSS 피드 주소
         const rssUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
-        // rss2json API를 사용하여 XML을 JSON으로 변환합니다. (API 키 불필요)
-        const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+        
+        // rss2json 대신 allorigins 프록시를 통해 RSS XML 원본을 그대로 가져옵니다.
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`);
         
         if (!response.ok) {
           throw new Error('데이터를 불러오는데 실패했습니다.');
         }
 
         const data = await response.json();
-
-        if (data.status !== 'ok') {
-          throw new Error('RSS 변환에 실패했습니다.');
+        const xmlText = data.contents;
+        
+        if (!xmlText) {
+          throw new Error('RSS 데이터를 가져오는데 실패했습니다.');
         }
 
-        // 받아온 데이터를 YouTubeVideo 인터페이스에 맞게 파싱합니다.
-        const parsedVideos: YouTubeVideo[] = data.items.map((item: any) => {
-          // item.link 형식: "https://www.youtube.com/watch?v=VIDEO_ID"
-          let youtubeId = '';
-          try {
-            const url = new URL(item.link);
-            youtubeId = url.searchParams.get('v') || '';
-          } catch (e) {
-            youtubeId = item.link.split('v=')[1]?.split('&')[0] || '';
-          }
+        // 브라우저 내장 DOMParser를 사용하여 XML 문자열을 분석합니다.
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+        
+        // <entry> 태그들을 순회하며 영상 정보를 추출합니다.
+        const entries = Array.from(xmlDoc.querySelectorAll('entry'));
+        
+        // 추출한 데이터를 YouTubeVideo 인터페이스 형식에 맞게 변환합니다.
+        const parsedVideos: YouTubeVideo[] = entries.map((entry) => {
+          const id = entry.querySelector('id')?.textContent || '';
+          const title = entry.querySelector('title')?.textContent || '';
+          const link = entry.querySelector('link')?.getAttribute('href') || '';
+          
+          // 정규식을 사용해 YouTube 영상 ID 추출 (예: /v=([^&]+)/)
+          const match = link.match(/v=([^&]+)/);
+          const youtubeId = match ? match[1] : '';
 
           return {
-            id: item.guid || item.id || youtubeId,
-            title: item.title,
+            id: id || youtubeId,
+            title: title,
             youtubeId: youtubeId,
           };
         });
