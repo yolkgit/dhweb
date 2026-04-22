@@ -122,19 +122,19 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIsLoading(true);
       const data = await api.get();
       
-      if (data.companyInfo) setCompanyInfo(data.companyInfo);
+      if (data.companyInfo && Object.keys(data.companyInfo).length > 0) setCompanyInfo(data.companyInfo);
       if (data.categories) setCategories(data.categories);
       if (data.products) setProducts(data.products);
       if (data.playlists) setPlaylists(data.playlists);
       if (data.faqs) setFaqs(data.faqs);
       if (data.certifications) setCertifications(data.certifications);
       if (data.labEquipment) setLabEquipment(data.labEquipment);
-      if (data.appSettings) setAppSettings(data.appSettings);
+      if (data.appSettings && Object.keys(data.appSettings).length > 0) setAppSettings(data.appSettings);
       if (data.heroSlides) setHeroSlides(data.heroSlides);
-      if (data.logoSettings) setLogoSettings(data.logoSettings);
-      if (data.designSettings) setDesignSettings(data.designSettings);
+      if (data.logoSettings && Object.keys(data.logoSettings).length > 0) setLogoSettings(data.logoSettings);
+      if (data.designSettings && Object.keys(data.designSettings).length > 0) setDesignSettings(data.designSettings);
       if (data.certificationMarks) setCertificationMarks(data.certificationMarks);
-      if (data.calculatorSettings) setCalculatorSettings(data.calculatorSettings);
+      if (data.calculatorSettings && Object.keys(data.calculatorSettings).length > 0) setCalculatorSettings(data.calculatorSettings);
       if (data.branches) setBranches(data.branches);
       
       setIsLoading(false);

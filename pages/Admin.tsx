@@ -652,8 +652,8 @@ const Admin: React.FC = () => {
                             type="number"
                             step="0.1"
                             className="input-field" 
-                            value={calculatorSettings.density} 
-                            onChange={e => updateCalculatorSettings({...calculatorSettings, density: parseFloat(e.target.value)})} 
+                            value={calculatorSettings.density || ''} 
+                            onChange={e => updateCalculatorSettings({...calculatorSettings, density: parseFloat(e.target.value) || 2.3})} 
                           />
                           <p className="text-xs text-slate-400 mt-1">기본값: 2.3 (아스콘/콘크리트 일반 밀도)</p>
                        </div>
