@@ -148,55 +148,35 @@ const Home: React.FC = () => {
         try {
           let items: VideoItem[] = [];
 
-          // 1. Try Google API first if key exists
-          if (appSettings.youtubeApiKey) {
-            try {
-               const API_KEY = appSettings.youtubeApiKey;
-               const API_URL = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=20&playlistId=${playlistId}&key=${API_KEY}`;
-               
-               const response = await fetch(API_URL);
-               if (!response.ok) {
-                   const errData = await response.json();
-                   console.warn(`YouTube API Error for ${cat.id}:`, errData);
-                   throw new Error('API Request failed');
-               }
-               
-               const data = await response.json();
-               items = data.items.map((item: any) => ({
-                 id: item.snippet.resourceId.videoId,
-                 title: item.snippet.title,
-                 thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url
-               }));
-            } catch (apiError) {
-               console.warn(`YouTube API failed for ${cat.id}, falling back to RSS...`);
-            }
-          }
+          // RSS 2 JSON API 사용 (API 키 불필요, CORS 우회 프록시 문제 해결)
+          const RSS_URL = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
+          const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`);
+          
+          if (!res.ok) throw new Error('RSS 데이터 로드 실패');
+          
+          const data = await res.json();
+          if (data.status === 'ok') {
+            items = data.items.map((item: any) => {
+              let videoId = '';
+              try {
+                const url = new URL(item.link);
+                videoId = url.searchParams.get('v') || '';
+              } catch (e) {
+                videoId = item.link.split('v=')[1]?.split('&')[0] || '';
+              }
+              // 비디오 ID 파싱 실패시 다른 방법으로 시도
+              if (!videoId && item.guid) {
+                const parts = item.guid.split(':');
+                videoId = parts[parts.length - 1];
+              }
 
-          // 2. Fallback to RSS if API failed or no key or items empty
-          if (items.length === 0) {
-            const RSS_URL = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
-            let textData = '';
-
-            try {
-              const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(RSS_URL)}`);
-              if (!res.ok) throw new Error('Primary proxy failed');
-              textData = await res.text();
-            } catch (primaryError) {
-              const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(RSS_URL)}`);
-              if (!res.ok) throw new Error('Backup proxy failed');
-              textData = await res.text();
-            }
-
-            const parser = new DOMParser();
-            const xml = parser.parseFromString(textData, "text/xml");
-            const entries = Array.from(xml.getElementsByTagName("entry"));
-
-            items = entries.map(entry => {
-              const id = entry.getElementsByTagName("yt:videoId")[0]?.textContent || "";
-              const title = entry.getElementsByTagName("media:title")[0]?.textContent || "";
-              const thumbnail = entry.getElementsByTagName("media:thumbnail")[0]?.getAttribute("url") || "";
-              return { id, title, thumbnail };
-            }).filter(item => item.id);
+              return { 
+                id: videoId, 
+                title: item.title, 
+                // rss2json에서 제공하는 thumbnail 사용, 없으면 직접 조합
+                thumbnail: item.thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` 
+              };
+            }).filter((item: any) => item.id);
           }
 
           if (items.length > 0) {
