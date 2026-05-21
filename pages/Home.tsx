@@ -313,7 +313,9 @@ const Home: React.FC = () => {
           </div>
 
           {categories.map((category, idx) => {
-            const representativeProduct = products.find(p => p.category === category.id);
+            const representativeProduct = category.representativeProductId
+              ? products.find(p => p.id === category.representativeProductId) || products.find(p => p.category === category.id)
+              : products.find(p => p.category === category.id);
             if (!representativeProduct) return null;
 
             const playlistId = playlists[category.id];

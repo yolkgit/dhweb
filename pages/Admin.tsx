@@ -392,9 +392,10 @@ const Admin: React.FC = () => {
                    <div className="space-y-4">
                       {categories.map((cat) => {
                          const productCount = products.filter(p => p.category === cat.id).length;
+                         const repProduct = cat.representativeProductId ? products.find(p => p.id === cat.representativeProductId) : null;
                          return (
                            <div key={cat.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg bg-white hover:shadow-md transition">
-                              <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-4 flex-wrap">
                                  <div className="bg-slate-100 text-slate-500 px-3 py-1 rounded text-xs font-bold font-mono">
                                    {cat.id}
                                  </div>
@@ -402,6 +403,11 @@ const Admin: React.FC = () => {
                                  <span className="text-xs text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
                                    제품 {productCount}개
                                  </span>
+                                 {repProduct && (
+                                   <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                     🏆 {repProduct.name}
+                                   </span>
+                                 )}
                               </div>
                               <div className="flex gap-2">
                                  <button onClick={() => setEditingCategory(cat)} className="p-2 text-slate-400 hover:text-emerald-600 bg-slate-50 hover:bg-emerald-50 rounded transition">
@@ -444,6 +450,29 @@ const Admin: React.FC = () => {
                                required 
                                placeholder="예: 도로보수재"
                              />
+                          </div>
+                          <div>
+                              <label className="label">🏆 메인페이지 대표제품</label>
+                              <p className="text-xs text-slate-500 mb-2">메인페이지 카테고리 섹션에 표시될 대표제품을 선택합니다. 미선택 시 첫 번째 제품이 표시됩니다.</p>
+                              {(() => {
+                                const catProducts = products.filter(p => p.category === editingCategory.id);
+                                return catProducts.length > 0 ? (
+                                  <select
+                                    className="input-field"
+                                    value={editingCategory.representativeProductId || ''}
+                                    onChange={e => setEditingCategory({...editingCategory, representativeProductId: e.target.value || undefined})}
+                                  >
+                                    <option value="">자동 (첫 번째 제품)</option>
+                                    {catProducts.map(p => (
+                                      <option key={p.id} value={p.id}>
+                                        {p.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <p className="text-sm text-slate-400 italic">이 카테고리에 등록된 제품이 없습니다.</p>
+                                );
+                              })()}
                           </div>
                           <button type="submit" className="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold mt-4 hover:bg-emerald-700 transition">저장</button>
                        </div>

@@ -31,10 +31,11 @@ model CompanyInfo {
 }
 
 model Category {
-  id          String    @id
-  label       String
-  playlistId  String?
-  products    Product[]
+  id                       String    @id
+  label                    String
+  playlistId               String?
+  representativeProductId  String?
+  products                 Product[]
 }
 
 model Product {

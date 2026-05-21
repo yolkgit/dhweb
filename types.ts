@@ -2,6 +2,7 @@
 export interface Category {
   id: string;
   label: string;
+  representativeProductId?: string;
 }
 
 export type ProductCategory = string; // Alias for string IDs

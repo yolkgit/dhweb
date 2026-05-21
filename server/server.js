@@ -88,10 +88,17 @@ app.get('/api/content', async (req, res) => {
      ]);
 
      // Reconstruct playlists map from categories
-     const playlists = {};
-     categories.forEach(c => {
-         if(c.playlistId) playlists[c.id] = c.playlistId;
-     });
+    const playlistMap = {};
+    categories.forEach(c => {
+      if (c.playlistId) playlistMap[c.id] = c.playlistId;
+    });
+
+    // Map categories to include representativeProductId for frontend
+    const mappedCategories = categories.map(c => ({
+      id: c.id,
+      label: c.label,
+      representativeProductId: c.representativeProductId || null
+    }));
 
      // Process Products to parse JSON fields
      const processedProducts = products.map(p => ({
@@ -112,11 +119,11 @@ app.get('/api/content', async (req, res) => {
      res.json({
          appSettings: appSettings || {},
          companyInfo: processedCompanyInfo || {},
-         categories: categories || [],
+         categories: mappedCategories || [],
          products: processedProducts || [],
          certifications: certifications || [],
          heroSlides: heroSlides || [],
-         playlists: playlists || {},
+         playlists: playlistMap || {},
          designSettings: designSettings || {},
          certificationMarks: certificationMarks || [],
          labEquipment: labEquipment || [],
@@ -140,15 +147,15 @@ app.post('/api/categories', async (req, res) => {
             for (const c of cat) {
                 await prisma.category.upsert({
                     where: { id: c.id },
-                    update: { label: c.label },
-                    create: { id: c.id, label: c.label }
+                    update: { label: c.label, representativeProductId: c.representativeProductId || null },
+                    create: { id: c.id, label: c.label, representativeProductId: c.representativeProductId || null }
                 });
             }
             return res.json({ success: true });
         }
         
         const result = await prisma.category.create({
-             data: { id: cat.id, label: cat.label }
+             data: { id: cat.id, label: cat.label, representativeProductId: cat.representativeProductId || null }
         });
         res.json(result);
     } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
@@ -159,7 +166,7 @@ app.put('/api/categories/:id', async (req, res) => {
         const cat = req.body;
         const result = await prisma.category.update({
             where: { id: req.params.id },
-            data: { label: cat.label }
+            data: { label: cat.label, representativeProductId: cat.representativeProductId || null }
         });
         res.json(result);
     } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
@@ -598,8 +605,8 @@ app.post("/api/data/:key", async (req, res) => {
              for (const item of data) {
                  await tx.category.upsert({
                      where: { id: item.id },
-                     update: { label: item.label },
-                     create: { id: item.id, label: item.label }
+                     update: { label: item.label, representativeProductId: item.representativeProductId || null },
+                     create: { id: item.id, label: item.label, representativeProductId: item.representativeProductId || null }
                  });
              }
              // 3. Delete those not in request? 
