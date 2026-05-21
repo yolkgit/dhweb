@@ -151,7 +151,20 @@ const Products: React.FC = () => {
                 className="w-full h-full object-contain p-4 bg-white"
               />
                
-
+               {/* Certification Marks for Modal */}
+               {selectedProduct.certificationMarkIds && selectedProduct.certificationMarkIds.length > 0 && (
+                   <div className="absolute top-4 left-4 flex gap-1.5 bg-white/90 backdrop-blur-sm p-1.5 rounded-xl border border-slate-100 shadow-sm z-10">
+                      {selectedProduct.certificationMarkIds.map(markId => {
+                         const mark = certificationMarks.find(m => m.id === markId);
+                         if (!mark || !mark.imageUrl) return null;
+                         return (
+                           <div key={markId} className="w-12 h-12 flex items-center justify-center p-1 hover:scale-110 transition-transform duration-200" title={mark.name}>
+                              <img src={mark.imageUrl} alt={mark.name} className="w-full h-full object-contain" />
+                           </div>
+                         );
+                      })}
+                   </div>
+               )}
 
                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white md:hidden">
                  <h2 className="text-2xl font-bold">{selectedProduct.name}</h2>
@@ -166,22 +179,6 @@ const Products: React.FC = () => {
                 </span>
                 <h2 className="text-3xl font-bold text-slate-900 mt-1">{selectedProduct.name}</h2>
               </div>
-
-              {/* Certification Marks for Modal */}
-              {selectedProduct.certificationMarkIds && selectedProduct.certificationMarkIds.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {selectedProduct.certificationMarkIds.map(markId => {
-                    const mark = certificationMarks.find(m => m.id === markId);
-                    if (!mark || !mark.imageUrl) return null;
-                    return (
-                      <div key={markId} className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl shadow-sm hover:bg-slate-100 transition-colors" title={mark.name}>
-                        <img src={mark.imageUrl} alt={mark.name} className="w-6 h-6 object-contain" />
-                        <span className="text-xs font-semibold text-slate-700">{mark.name}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
 
               <p className="text-slate-600 leading-relaxed mb-8 text-lg">
                 {selectedProduct.description}
