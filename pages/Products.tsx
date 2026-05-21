@@ -77,7 +77,20 @@ const Products: React.FC = () => {
                     )}
                   </div>
 
-
+                  {/* Certification Marks (Top Right) */}
+                  {product.certificationMarkIds && product.certificationMarkIds.length > 0 && (
+                    <div className="absolute top-4 right-4 flex gap-1.5 bg-white/90 backdrop-blur-sm p-1.5 rounded-xl border border-slate-100 shadow-sm z-10">
+                        {product.certificationMarkIds.map(markId => {
+                          const mark = certificationMarks.find(m => m.id === markId);
+                          if (!mark || !mark.imageUrl) return null;
+                          return (
+                            <div key={markId} className="w-12 h-12 flex items-center justify-center p-1 hover:scale-110 transition-transform duration-200" title={mark.name}>
+                                <img src={mark.imageUrl} alt={mark.name} className="w-full h-full object-contain" />
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}
@@ -89,19 +102,6 @@ const Products: React.FC = () => {
                     <h3 className="text-2xl font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
                       {product.name}
                     </h3>
-                    {product.certificationMarkIds && product.certificationMarkIds.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        {product.certificationMarkIds.map(markId => {
-                          const mark = certificationMarks.find(m => m.id === markId);
-                          if (!mark || !mark.imageUrl) return null;
-                          return (
-                            <div key={markId} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center p-1.5 hover:scale-110 hover:border-emerald-500 transition-all duration-200" title={mark.name}>
-                              <img src={mark.imageUrl} alt={mark.name} className="w-full h-full object-contain" />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
                   
                   <p className="text-slate-500 mb-6 text-sm leading-relaxed flex-grow line-clamp-3">

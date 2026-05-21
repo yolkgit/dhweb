@@ -360,23 +360,23 @@ const Home: React.FC = () => {
                            <span className="bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded shadow-sm">대표제품</span>
                            {representativeProduct.isEco && <span className="bg-emerald-400 text-white text-xs font-bold px-2 py-1 rounded flex items-center gap-1 shadow-sm"><CheckCircle2 size={10} />ECO</span>}
                         </div>
-
-                      </div>
-                      <div className="p-6 flex flex-col flex-grow">
-                        <h4 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-emerald-700 transition-colors">{representativeProduct.name}</h4>
+                        {/* Certification Marks (Top Right) */}
                         {representativeProduct.certificationMarkIds && representativeProduct.certificationMarkIds.length > 0 && (
-                           <div className="flex flex-wrap gap-1.5 mb-3">
+                           <div className="absolute top-3 right-3 flex gap-1.5 bg-white/90 backdrop-blur-sm p-1.5 rounded-xl border border-slate-100 shadow-sm z-10">
                               {representativeProduct.certificationMarkIds.map(markId => {
                                  const mark = certificationMarks.find(m => m.id === markId);
                                  if (!mark || !mark.imageUrl) return null;
                                  return (
-                                   <div key={markId} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center p-1.5 hover:scale-110 hover:border-emerald-500 transition-all duration-200" title={mark.name}>
+                                   <div key={markId} className="w-12 h-12 flex items-center justify-center p-1 hover:scale-110 transition-transform duration-200" title={mark.name}>
                                       <img src={mark.imageUrl} alt={mark.name} className="w-full h-full object-contain" />
                                    </div>
                                  );
                               })}
                            </div>
                         )}
+                      </div>
+                      <div className="p-6 flex flex-col flex-grow">
+                        <h4 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-emerald-700 transition-colors">{representativeProduct.name}</h4>
                         <p className="text-slate-600 mb-6 flex-grow leading-relaxed line-clamp-4">{representativeProduct.description}</p>
                         
                         <div className="space-y-2 mb-8">
