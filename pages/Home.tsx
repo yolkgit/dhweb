@@ -125,6 +125,11 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     const fetchAllPlaylists = async () => {
+      const apiKey = appSettings.youtubeApiKey;
+      
+      // API 키가 없으면 영상을 불러오지 않습니다.
+      if (!apiKey) return;
+
       const lists: Record<string, VideoItem[]> = {};
       const loadingStates: Record<string, boolean> = {};
 
@@ -146,38 +151,23 @@ const Home: React.FC = () => {
         }
 
         try {
-          let items: VideoItem[] = [];
-
-          // RSS 2 JSON API 사용 (API 키 불필요, CORS 우회 프록시 문제 해결)
-          const RSS_URL = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
-          const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`);
+          // YouTube Data API v3 직접 호출
+          const res = await fetch(
+            `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=15&playlistId=${playlistId}&key=${apiKey}`
+          );
           
-          if (!res.ok) throw new Error('RSS 데이터 로드 실패');
+          if (!res.ok) throw new Error('YouTube API 호출 실패');
           
           const data = await res.json();
-          if (data.status === 'ok') {
-            items = data.items.map((item: any) => {
-              let videoId = '';
-              try {
-                const url = new URL(item.link);
-                videoId = url.searchParams.get('v') || '';
-              } catch (e) {
-                videoId = item.link.split('v=')[1]?.split('&')[0] || '';
-              }
-              // 비디오 ID 파싱 실패시 다른 방법으로 시도
-              if (!videoId && item.guid) {
-                const parts = item.guid.split(':');
-                videoId = parts[parts.length - 1];
-              }
-
-              return { 
-                id: videoId, 
-                title: item.title, 
-                // rss2json에서 제공하는 thumbnail 사용, 없으면 직접 조합
-                thumbnail: item.thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` 
-              };
-            }).filter((item: any) => item.id);
-          }
+          const items: VideoItem[] = (data.items || [])
+            .filter((item: any) => item.snippet?.resourceId?.videoId)
+            .map((item: any) => ({
+              id: item.snippet.resourceId.videoId,
+              title: item.snippet.title,
+              thumbnail: item.snippet.thumbnails?.high?.url 
+                || item.snippet.thumbnails?.medium?.url 
+                || `https://i.ytimg.com/vi/${item.snippet.resourceId.videoId}/hqdefault.jpg`
+            }));
 
           if (items.length > 0) {
             lists[cat.id] = items;
