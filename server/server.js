@@ -204,7 +204,8 @@ app.post('/api/products', async (req, res) => {
                 isEco: prod.isEco,
                 specUrl: prod.specUrl,
                 msdsUrl: prod.msdsUrl,
-                certificationMarkIds: JSON.stringify(prod.certificationMarkIds || [])
+                certificationMarkIds: JSON.stringify(prod.certificationMarkIds || []),
+                constructionImageUrl: prod.constructionImageUrl || null
             }
         });
         res.json(result);
@@ -229,7 +230,8 @@ app.put('/api/products/:id', async (req, res) => {
                 isEco: prod.isEco,
                 specUrl: prod.specUrl,
                 msdsUrl: prod.msdsUrl,
-                certificationMarkIds: JSON.stringify(prod.certificationMarkIds || [])
+                certificationMarkIds: JSON.stringify(prod.certificationMarkIds || []),
+                constructionImageUrl: prod.constructionImageUrl || null
             }
         });
         res.json(result);
@@ -628,6 +630,7 @@ app.post("/api/data/:key", async (req, res) => {
                     specUrl: item.specUrl,
                     msdsUrl: item.msdsUrl,
                     certificationMarkIds: JSON.stringify(item.certificationMarkIds || []),
+                    constructionImageUrl: item.constructionImageUrl || null
                 };
                 
                 await tx.product.upsert({

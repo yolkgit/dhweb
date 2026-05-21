@@ -42,6 +42,7 @@ export interface Product {
   specUrl?: string; // 시방서 URL (Base64 or Link)
   msdsUrl?: string; // MSDS URL (Base64 or Link)
   certificationMarkIds?: string[]; // Array of CertificationMark IDs
+  constructionImageUrl?: string; // 시공방법 이미지 URL
 }
 
 export interface Certification {

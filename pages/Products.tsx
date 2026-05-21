@@ -134,7 +134,7 @@ const Products: React.FC = () => {
       {selectedProduct && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedProduct(null)}></div>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-10 flex flex-col md:flex-row animate-fade-in-up">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-10 flex flex-col animate-fade-in-up">
             
             <button 
               onClick={() => setSelectedProduct(null)}
@@ -143,8 +143,10 @@ const Products: React.FC = () => {
               <X size={24} />
             </button>
 
-            {/* Modal Image */}
-            <div className="w-full md:w-2/5 h-64 md:h-auto bg-slate-100 relative shrink-0">
+            {/* Upper Section: Image + Info */}
+            <div className="flex flex-col md:flex-row">
+              {/* Modal Image */}
+              <div className="w-full md:w-2/5 h-64 md:h-auto bg-slate-100 relative shrink-0">
                <img 
                 src={selectedProduct.imageUrl} 
                 alt={selectedProduct.name} 
@@ -289,7 +291,26 @@ const Products: React.FC = () => {
                 </a>
               </div>
             </div>
-          </div>
+            </div>{/* End Upper flex row */}
+
+            {/* Lower Section: Construction Method Image (Full Width) */}
+            {selectedProduct.constructionImageUrl && (
+              <div className="border-t border-slate-200 bg-slate-50 p-8 md:p-10">
+                <h3 className="font-bold text-slate-900 mb-6 flex items-center text-xl">
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 mr-3 text-base">📐</span>
+                  시공 방법
+                </h3>
+                <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-white">
+                  <img
+                    src={selectedProduct.constructionImageUrl}
+                    alt={`${selectedProduct.name} 시공방법`}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+              </div>
+            )}
+
+          </div>{/* End modal card */}
         </div>
       )}
     </div>

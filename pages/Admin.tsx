@@ -195,7 +195,8 @@ const Admin: React.FC = () => {
       isEco: false,
       specUrl: '',
       msdsUrl: '',
-      certificationMarkIds: []
+      certificationMarkIds: [],
+      constructionImageUrl: ''
     });
   };
 
@@ -784,6 +785,18 @@ const Admin: React.FC = () => {
                           />
                         </div>
                       </div>
+
+                       <div className="md:col-span-2 bg-white p-4 rounded-lg border border-slate-200">
+                         <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2">
+                           <span>📐</span> 시공방법 이미지
+                         </h4>
+                         <p className="text-xs text-slate-500 mb-4">제품 상세 팝업 하단에 전체 너비로 표시되는 시공방법 안내 이미지입니다.</p>
+                         <ImageInput
+                           label="시공방법 이미지 업로드"
+                           value={editingProduct.constructionImageUrl || ''}
+                           onChange={(url) => setEditingProduct({...editingProduct, constructionImageUrl: url})}
+                         />
+                       </div>
                     </div>
 
                     <div className="mb-6">

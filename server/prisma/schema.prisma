@@ -52,6 +52,7 @@ model Product {
   specUrl          String?
   msdsUrl          String?
   certificationMarkIds String? // JSON string or comma sep
+  constructionImageUrl String?
   createdAt        DateTime @default(now())
 }
 
