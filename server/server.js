@@ -84,7 +84,7 @@ app.get('/api/content', async (req, res) => {
          prisma.labEquipment.findMany({ orderBy: { sortOrder: 'asc' } }),
          prisma.faq.findMany(),
          prisma.logoSettings.findFirst(),
-         prisma.branch.findMany(),
+         prisma.branch.findMany({ orderBy: { sortOrder: 'asc' } }),
          prisma.calculatorSettings.findFirst()
      ]);
 
@@ -990,6 +990,26 @@ app.put('/api/lab-equipments/reorder', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Failed to reorder lab equipments" });
+    }
+});
+
+
+// Reorder Branches
+app.put('/api/branches/reorder', async (req, res) => {
+    try {
+        const ids = req.body;
+        await prisma.$transaction(
+            ids.map((id, index) =>
+                prisma.branch.update({
+                    where: { id },
+                    data: { sortOrder: index }
+                })
+            )
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to reorder branches" });
     }
 });
 

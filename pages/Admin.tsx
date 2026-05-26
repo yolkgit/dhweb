@@ -23,7 +23,7 @@ const Admin: React.FC = () => {
     appSettings, updateAppSettings,
     certificationMarks, addCertificationMark, updateCertificationMark, deleteCertificationMark,
     calculatorSettings, updateCalculatorSettings,
-    branches, addBranch, updateBranch, deleteBranch,
+    branches, addBranch, updateBranch, deleteBranch, reorderBranches,
     resetToDefaults 
   } = useContent();
 

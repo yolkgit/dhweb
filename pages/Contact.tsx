@@ -93,19 +93,19 @@ const Contact: React.FC = () => {
                 <Building className="w-6 h-6 mr-2 text-emerald-500" />
                 지점 및 대리점 안내 (Branches)
               </h2>
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {branches.map((branch) => (
-                  <div key={branch.id} className="border-b border-slate-100 last:border-0 pb-4 last:pb-0">
-                    <h3 className="font-bold text-lg text-slate-800 mb-2 flex items-center gap-2">
+                  <div key={branch.id} className="bg-slate-50 border border-slate-100 rounded-xl p-5 hover:shadow-md transition hover:border-emerald-200">
+                    <h3 className="font-bold text-lg text-slate-800 mb-3 flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                       {branch.name}
                     </h3>
-                    <div className="pl-4 space-y-1">
-                      <p className="text-slate-600 flex items-start gap-2">
+                    <div className="space-y-2">
+                      <p className="text-slate-600 flex items-start gap-2 text-sm">
                         <MapPin size={16} className="mt-1 text-slate-400 shrink-0" />
                         {branch.address}
                       </p>
-                      <p className="text-slate-600 flex items-center gap-2">
+                      <p className="text-slate-600 flex items-center gap-2 text-sm">
                         <Phone size={16} className="text-slate-400 shrink-0" />
                         {branch.phone}
                       </p>

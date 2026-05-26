@@ -19,6 +19,7 @@ export interface Branch {
   name: string;
   address: string;
   phone: string;
+  sortOrder?: number;
 }
 
 export interface CalculatorSettings {

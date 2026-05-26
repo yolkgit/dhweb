@@ -49,6 +49,7 @@ interface ContentContextType {
   addBranch: (branch: Branch) => void;
   updateBranch: (branch: Branch) => void;
   deleteBranch: (id: string) => void;
+  reorderBranches: (orderedBranches: Branch[]) => void;
   currentLang: 'ko' | 'en';
   toggleLanguage: () => void;
   resetToDefaults: () => void;
@@ -340,6 +341,14 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setBranches(prev => prev.filter(b => b.id !== id));
     api.delete('branches', id);
   };
+  const reorderBranches = (orderedBranches: Branch[]) => {
+    setBranches(orderedBranches);
+    fetch('/api/branches/reorder', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderedBranches.map(b => b.id))
+    }).catch(e => console.error('Failed to reorder branches', e));
+  };
 
   const resetToDefaults = () => {
     if(window.confirm('모든 데이터를 초기값으로 되돌리시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
@@ -380,7 +389,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       appSettings, updateAppSettings,
       certificationMarks, addCertificationMark, updateCertificationMark, deleteCertificationMark,
       calculatorSettings, updateCalculatorSettings,
-      branches, addBranch, updateBranch, deleteBranch,
+      branches, addBranch, updateBranch, deleteBranch, reorderBranches,
       currentLang, toggleLanguage,
       resetToDefaults,
       isLoading,

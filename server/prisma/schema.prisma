@@ -145,6 +145,7 @@ model Branch {
   name    String
   address String
   phone   String
+  sortOrder Int  @default(0)
 }
 
 model CalculatorSettings {
