@@ -10,6 +10,7 @@ const InquiryModal: React.FC = () => {
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('제품 견적 문의');
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Pre-populate fields when inquiryProduct changes
   useEffect(() => {
@@ -23,8 +24,6 @@ const InquiryModal: React.FC = () => {
   }, [inquiryProduct, isInquiryModalOpen]);
 
   if (!isInquiryModalOpen) return null;
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
