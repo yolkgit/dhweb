@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useContent } from '../context/ContentContext';
 import { Product, ProductCategory, LabEquipment, Certification, HeroSlide, CertificationMark, Category, DesignSettings, Branch } from '../types';
-import { Trash2, Plus, Edit2, RotateCcw, X, Beaker, Award, LogOut, Youtube, Info, Key, ExternalLink, Image as ImageIcon, Palette, Film, Type, CheckSquare, Table as TableIcon, Tag, List, Clock, MapPin, Phone } from 'lucide-react';
+import { Trash2, Plus, Edit2, RotateCcw, X, Beaker, Award, LogOut, Youtube, Info, Key, ExternalLink, Image as ImageIcon, Palette, Film, Type, CheckSquare, Table as TableIcon, Tag, List, Clock, MapPin, Phone, GripVertical } from 'lucide-react';
 import IconPicker from '../components/IconPicker';
 import { IconRenderer } from '../utils/iconMap';
 import ImageInput from '../components/ImageInput';
@@ -12,7 +12,7 @@ import PdfInput from '../components/PdfInput';
 const Admin: React.FC = () => {
   const { 
     companyInfo, updateCompanyInfo, 
-    categories, addCategory, updateCategory, deleteCategory,
+    categories, addCategory, updateCategory, deleteCategory, reorderCategories,
     products, addProduct, updateProduct, deleteProduct,
     playlists, updatePlaylist,
     labEquipment, addLabEquipment, updateLabEquipment, deleteLabEquipment,
@@ -38,6 +38,11 @@ const Admin: React.FC = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const [useTableSpecs, setUseTableSpecs] = useState(false);
+
+  // Drag-and-drop state for category reordering
+  const [draggedCategoryId, setDraggedCategoryId] = useState<string | null>(null);
+  const [dragOverCategoryId, setDragOverCategoryId] = useState<string | null>(null);
+  const dragCounterRef = useRef<Record<string, number>>({});
 
   // Sync table specs toggle
   useEffect(() => {
@@ -386,16 +391,81 @@ const Admin: React.FC = () => {
                        <Plus size={16} /> 카테고리 추가
                     </button>
                  </div>
-                 <p className="text-sm text-slate-500 mb-6">제품의 분류 기준이 되는 카테고리를 추가, 수정, 삭제합니다. ID는 영문 대문자 사용을 권장합니다.</p>
+                 <p className="text-sm text-slate-500 mb-6">제품의 분류 기준이 되는 카테고리를 추가, 수정, 삭제합니다. <span className="text-emerald-600 font-medium">⬍ 드래그하여 순서를 변경할 수 있습니다.</span> 이 순서는 메인페이지와 제품소개에 그대로 적용됩니다.</p>
 
                  {!editingCategory ? (
-                   <div className="space-y-4">
-                      {categories.map((cat) => {
+                   <div className="space-y-1">
+                      {categories.map((cat, index) => {
                          const productCount = products.filter(p => p.category === cat.id).length;
                          const repProduct = cat.representativeProductId ? products.find(p => p.id === cat.representativeProductId) : null;
+                         const isDragging = draggedCategoryId === cat.id;
+                         const isDragOver = dragOverCategoryId === cat.id && draggedCategoryId !== cat.id;
                          return (
-                           <div key={cat.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg bg-white hover:shadow-md transition">
+                           <div 
+                             key={cat.id} 
+                             draggable
+                             onDragStart={(e) => {
+                               setDraggedCategoryId(cat.id);
+                               e.dataTransfer.effectAllowed = 'move';
+                               e.dataTransfer.setData('text/plain', cat.id);
+                             }}
+                             onDragEnd={() => {
+                               setDraggedCategoryId(null);
+                               setDragOverCategoryId(null);
+                               dragCounterRef.current = {};
+                             }}
+                             onDragEnter={(e) => {
+                               e.preventDefault();
+                               if (!dragCounterRef.current[cat.id]) dragCounterRef.current[cat.id] = 0;
+                               dragCounterRef.current[cat.id]++;
+                               if (draggedCategoryId && draggedCategoryId !== cat.id) {
+                                 setDragOverCategoryId(cat.id);
+                               }
+                             }}
+                             onDragLeave={(e) => {
+                               e.preventDefault();
+                               if (dragCounterRef.current[cat.id]) dragCounterRef.current[cat.id]--;
+                               if (dragCounterRef.current[cat.id] <= 0) {
+                                 dragCounterRef.current[cat.id] = 0;
+                                 if (dragOverCategoryId === cat.id) {
+                                   setDragOverCategoryId(null);
+                                 }
+                               }
+                             }}
+                             onDragOver={(e) => {
+                               e.preventDefault();
+                               e.dataTransfer.dropEffect = 'move';
+                             }}
+                             onDrop={(e) => {
+                               e.preventDefault();
+                               dragCounterRef.current = {};
+                               if (!draggedCategoryId || draggedCategoryId === cat.id) return;
+                               const fromIndex = categories.findIndex(c => c.id === draggedCategoryId);
+                               const toIndex = categories.findIndex(c => c.id === cat.id);
+                               if (fromIndex === -1 || toIndex === -1) return;
+                               const reordered = [...categories];
+                               const [moved] = reordered.splice(fromIndex, 1);
+                               reordered.splice(toIndex, 0, moved);
+                               reorderCategories(reordered);
+                               setDraggedCategoryId(null);
+                               setDragOverCategoryId(null);
+                             }}
+                             className={`flex items-center justify-between p-4 border rounded-lg transition-all cursor-grab active:cursor-grabbing ${
+                               isDragging 
+                                 ? 'opacity-40 border-dashed border-slate-400 bg-slate-100 scale-95' 
+                                 : isDragOver
+                                   ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-100 ring-2 ring-emerald-300'
+                                   : 'border-slate-200 bg-white hover:shadow-md'
+                             }`}
+                             style={{ transition: isDragging ? 'none' : 'all 0.2s ease' }}
+                           >
                               <div className="flex items-center gap-4 flex-wrap">
+                                 <div className="text-slate-300 hover:text-slate-500 transition cursor-grab active:cursor-grabbing" title="드래그하여 순서 변경">
+                                   <GripVertical size={20} />
+                                 </div>
+                                 <div className="bg-emerald-50 text-emerald-700 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border border-emerald-200">
+                                   {index + 1}
+                                 </div>
                                  <div className="bg-slate-100 text-slate-500 px-3 py-1 rounded text-xs font-bold font-mono">
                                    {cat.id}
                                  </div>

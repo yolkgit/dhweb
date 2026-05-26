@@ -35,6 +35,7 @@ model Category {
   label                    String
   playlistId               String?
   representativeProductId  String?
+  sortOrder                Int       @default(0)
   products                 Product[]
 }
 

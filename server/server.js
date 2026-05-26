@@ -74,7 +74,7 @@ app.get('/api/content', async (req, res) => {
      ] = await Promise.all([
          prisma.appSettings.findFirst(),
          prisma.companyInfo.findFirst(),
-         prisma.category.findMany(),
+         prisma.category.findMany({ orderBy: { sortOrder: 'asc' } }),
          prisma.product.findMany(),
          prisma.certification.findMany(),
          prisma.heroSlide.findMany({ orderBy: { order: 'asc' } }),
@@ -147,26 +147,48 @@ app.post('/api/categories', async (req, res) => {
             for (const c of cat) {
                 await prisma.category.upsert({
                     where: { id: c.id },
-                    update: { label: c.label, representativeProductId: c.representativeProductId || null },
-                    create: { id: c.id, label: c.label, representativeProductId: c.representativeProductId || null }
+                    update: { label: c.label, representativeProductId: c.representativeProductId || null, sortOrder: c.sortOrder ?? 0 },
+                    create: { id: c.id, label: c.label, representativeProductId: c.representativeProductId || null, sortOrder: c.sortOrder ?? 0 }
                 });
             }
             return res.json({ success: true });
         }
         
+        // Auto-assign sortOrder to be at the end
+        const maxOrder = await prisma.category.aggregate({ _max: { sortOrder: true } });
+        const nextOrder = (maxOrder._max.sortOrder ?? -1) + 1;
+        
         const result = await prisma.category.create({
-             data: { id: cat.id, label: cat.label, representativeProductId: cat.representativeProductId || null }
+             data: { id: cat.id, label: cat.label, representativeProductId: cat.representativeProductId || null, sortOrder: cat.sortOrder ?? nextOrder }
         });
         res.json(result);
+    } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
+});
+
+// --- Category Reorder (must be before :id route) ---
+app.put('/api/categories/reorder', async (req, res) => {
+    try {
+        const orderedIds = req.body; // Array of category IDs in new order
+        await prisma.$transaction(
+            orderedIds.map((id, index) =>
+                prisma.category.update({
+                    where: { id },
+                    data: { sortOrder: index }
+                })
+            )
+        );
+        res.json({ success: true });
     } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
 });
 
 app.put('/api/categories/:id', async (req, res) => {
     try {
         const cat = req.body;
+        const updateData = { label: cat.label, representativeProductId: cat.representativeProductId || null };
+        if (cat.sortOrder !== undefined) updateData.sortOrder = cat.sortOrder;
         const result = await prisma.category.update({
             where: { id: req.params.id },
-            data: { label: cat.label, representativeProductId: cat.representativeProductId || null }
+            data: updateData
         });
         res.json(result);
     } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
@@ -601,13 +623,15 @@ app.post("/api/data/:key", async (req, res) => {
         await prisma.$transaction(async (tx) => {
              // 1. Get all existing IDs
             //  const existing = await tx.category.findMany({ select: { id: true } });
-             // 2. Upsert all from request
+             // 2. Upsert all from request (preserve sortOrder from array index)
+             let orderCounter = 0;
              for (const item of data) {
                  await tx.category.upsert({
                      where: { id: item.id },
-                     update: { label: item.label, representativeProductId: item.representativeProductId || null },
-                     create: { id: item.id, label: item.label, representativeProductId: item.representativeProductId || null }
+                     update: { label: item.label, representativeProductId: item.representativeProductId || null, sortOrder: item.sortOrder ?? orderCounter },
+                     create: { id: item.id, label: item.label, representativeProductId: item.representativeProductId || null, sortOrder: item.sortOrder ?? orderCounter }
                  });
+                 orderCounter++;
              }
              // 3. Delete those not in request? 
              // Frontend usually sends the whole list.

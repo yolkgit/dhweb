@@ -12,6 +12,7 @@ interface ContentContextType {
   addCategory: (category: Category) => void;
   updateCategory: (category: Category) => void;
   deleteCategory: (id: string) => void;
+  reorderCategories: (orderedCategories: Category[]) => void;
   products: Product[];
   addProduct: (product: Product) => void;
   updateProduct: (product: Product) => void;
@@ -186,6 +187,15 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setCategories(prev => prev.filter(c => c.id !== id));
     api.delete('categories', id);
   };
+  const reorderCategories = (orderedCategories: Category[]) => {
+    setCategories(orderedCategories);
+    // Send just the ordered IDs to the reorder endpoint
+    fetch('/api/categories/reorder', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderedCategories.map(c => c.id))
+    }).catch(e => console.error('Failed to reorder categories', e));
+  };
 
   const addProduct = (product: Product) => {
     setProducts(prev => [...prev, product]);
@@ -321,7 +331,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   return (
     <ContentContext.Provider value={{
       companyInfo, updateCompanyInfo,
-      categories, addCategory, updateCategory, deleteCategory,
+      categories, addCategory, updateCategory, deleteCategory, reorderCategories,
       products, addProduct, updateProduct, deleteProduct,
       playlists, updatePlaylist,
       faqs, updateFaqs,
