@@ -27,6 +27,7 @@ model CompanyInfo {
   vision          String   // JSON string for string[]
   kakaoChannelUrl String?
   companyViewUrl  String?
+  catalogUrl      String?
   updatedAt       DateTime @updatedAt
 }
 

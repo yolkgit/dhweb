@@ -1699,6 +1699,13 @@ const Admin: React.FC = () => {
                      <label className="label">슬로건</label>
                      <textarea name="slogan" value={String(companyInfo.slogan || '')} onChange={handleInfoChange} className="input-field h-24 resize-none" />
                    </div>
+                    <div className="mt-4">
+                      <PdfInput 
+                        label="종합 카탈로그 PDF 업로드" 
+                        value={(companyInfo as any).catalogUrl || ''} 
+                        onChange={(url) => updateCompanyInfo({ ...companyInfo, catalogUrl: url } as any)} 
+                      />
+                    </div>
                  </div>
                  <div className="mt-4 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm">
                     * 이곳에서 수정된 정보는 헤더(Header)와 풋터(Footer), 고객센터 페이지에 자동으로 반영됩니다.
