@@ -541,11 +541,11 @@ app.post('/api/company-info', async (req, res) => {
 // Update App Settings (YouTube Key)
 app.post('/api/app-settings', async (req, res) => {
     try {
-        const { youtubeApiKey } = req.body;
+        const { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass } = req.body;
         const updated = await prisma.appSettings.upsert({
             where: { id: 1 },
-            update: { youtubeApiKey },
-            create: { youtubeApiKey }
+            update: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass },
+            create: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass }
         });
         res.json(updated);
     } catch (error) {
@@ -585,11 +585,11 @@ app.post("/api/data/:key", async (req, res) => {
     }
     
     if (key === 'appSettings') {
-        const { youtubeApiKey } = data;
+        const { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass } = data;
         const updated = await prisma.appSettings.upsert({
             where: { id: 1 },
-            update: { youtubeApiKey },
-            create: { youtubeApiKey }
+            update: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass },
+            create: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass }
         });
         return res.json(updated);
     }
