@@ -141,7 +141,7 @@ const CategorySlideshow: React.FC<{ images: string[], categoryLabel: string }> =
 };
 
 const Home: React.FC = () => {
-  const { companyInfo, products, playlists, appSettings, heroSlides, currentLang, certificationMarks, categories } = useContent();
+  const { companyInfo, products, playlists, appSettings, heroSlides, currentLang, certificationMarks, categories, openInquiryModal } = useContent();
   
   // State to store fetched videos for each category
   const [videoLists, setVideoLists] = useState<Record<string, VideoItem[]>>({});
@@ -306,9 +306,9 @@ const Home: React.FC = () => {
                     제품 살펴보기
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
-                  <Link to="/contact" className="inline-flex items-center justify-center px-10 py-5 bg-white/10 backdrop-blur-md text-white font-bold rounded-full hover:bg-white/20 transition-all border border-white/30 text-lg">
+                  <button onClick={() => openInquiryModal()} className="inline-flex items-center justify-center px-10 py-5 bg-white/10 backdrop-blur-md text-white font-bold rounded-full hover:bg-white/20 transition-all border border-white/30 text-lg">
                     견적 문의하기
-                  </Link>
+                  </button>
                 </div>
               </div>
             )}

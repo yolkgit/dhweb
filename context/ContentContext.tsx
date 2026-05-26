@@ -54,6 +54,10 @@ interface ContentContextType {
   toggleLanguage: () => void;
   resetToDefaults: () => void;
   isLoading: boolean; // Added loading state
+  isInquiryModalOpen: boolean;
+  setIsInquiryModalOpen: (open: boolean) => void;
+  inquiryProduct: Product | null;
+  openInquiryModal: (product?: Product | null) => void;
 }
 
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
@@ -100,6 +104,13 @@ const api = {
 
 export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
+  const [inquiryProduct, setInquiryProduct] = useState<Product | null>(null);
+
+  const openInquiryModal = (product = null) => {
+    setInquiryProduct(product);
+    setIsInquiryModalOpen(true);
+  };
   const [currentLang, setCurrentLang] = useState<'ko' | 'en'>('ko');
 
   // Initialize states with defaults first
@@ -356,7 +367,11 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       branches, addBranch, updateBranch, deleteBranch,
       currentLang, toggleLanguage,
       resetToDefaults,
-      isLoading
+      isLoading,
+      isInquiryModalOpen,
+      setIsInquiryModalOpen,
+      inquiryProduct,
+      openInquiryModal
     }}>
       {children}
     </ContentContext.Provider>

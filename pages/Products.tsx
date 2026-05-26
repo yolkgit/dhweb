@@ -5,7 +5,7 @@ import { Tag, Leaf, Info, X, Check, FileText, Download } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
 
 const Products: React.FC = () => {
-  const { products, certificationMarks, categories } = useContent();
+  const { products, certificationMarks, categories, openInquiryModal } = useContent();
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -297,12 +297,12 @@ const Products: React.FC = () => {
                 >
                   닫기
                 </button>
-                <a 
-                  href="/#/contact"
+                <button 
+                  onClick={() => openInquiryModal(selectedProduct)}
                   className="px-6 py-2 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition"
                 >
                   견적 문의하기
-                </a>
+                </button>
               </div>
             </div>
             </div>{/* End Upper flex row */}

@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import UsageCalculator from './UsageCalculator';
+import InquiryModal from './InquiryModal';
 import { useContent } from '../context/ContentContext';
 import { getSquareCropDataUrl } from '../utils/imageHelpers';
 
@@ -62,6 +63,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </main>
       <Footer />
       <UsageCalculator />
+      <InquiryModal />
     </div>
   );
 };
