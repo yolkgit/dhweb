@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer';
 import express from "express";
 import cors from "cors";
 import multer from "multer";
@@ -878,6 +879,81 @@ app.get("*", (req, res) => {
 });
 
 // Start server
+
+// Online Inquiry Endpoint (Send Email)
+app.post('/api/inquiry', async (req, res) => {
+    try {
+        const { name, phone, email, subject, message } = req.body;
+        
+        // Fetch Admin Settings & SMTP Config
+        const appSettings = await prisma.appSettings.findFirst();
+        const companyInfo = await prisma.companyInfo.findFirst();
+        
+        if (!companyInfo || !companyInfo.email) {
+            return res.status(400).json({ error: '관리자 수신 이메일이 설정되지 않았습니다. 관리자 페이지에서 이메일을 설정해주세요.' });
+        }
+        
+        if (!appSettings || !appSettings.smtpHost || !appSettings.smtpPort || !appSettings.smtpUser || !appSettings.smtpPass) {
+            return res.status(400).json({ error: 'SMTP 발송 서버가 설정되지 않았습니다. 관리자 페이지에서 SMTP 정보를 설정해주세요.' });
+        }
+        
+        // Create Nodemailer Transporter
+        const transporter = nodemailer.createTransport({
+            host: appSettings.smtpHost,
+            port: appSettings.smtpPort,
+            secure: appSettings.smtpPort === 465, // true for 465, false for other ports
+            auth: {
+                user: appSettings.smtpUser,
+                pass: appSettings.smtpPass
+            }
+        });
+        
+        // Compose Email
+        const mailOptions = {
+            from: `"${name}" <${appSettings.smtpUser}>`, // Sender address must be the SMTP user to avoid spoofing issues
+            replyTo: email, // Reply to the customer's email
+            to: companyInfo.email, // Receiver address
+            subject: `[온라인 문의] ${subject}`,
+            html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <h2 style="color: #0f172a; border-bottom: 2px solid #10b981; padding-bottom: 10px; margin-bottom: 20px;">새로운 온라인 문의가 접수되었습니다.</h2>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; font-weight: bold; width: 120px; color: #475569;">이름/담당자명</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; color: #0f172a;">${name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #475569;">연락처</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; color: #0f172a;">${phone}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #475569;">이메일</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; color: #0f172a;"><a href="mailto:${email}" style="color: #10b981;">${email}</a></td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #475569;">문의 제목</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; color: #0f172a;">${subject}</td>
+                        </tr>
+                    </table>
+                    <h3 style="color: #475569; font-size: 16px; margin-bottom: 10px;">문의 내용</h3>
+                    <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; color: #334155; line-height: 1.6; white-space: pre-wrap;">${message}</div>
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
+                        이 메일은 웹사이트 온라인 문의를 통해 자동 발송되었습니다.
+                    </div>
+                </div>
+            `
+        };
+        
+        // Send Email
+        await transporter.sendMail(mailOptions);
+        
+        res.json({ success: true, message: '이메일이 성공적으로 전송되었습니다.' });
+    } catch (error) {
+        console.error('Email send error:', error);
+        res.status(500).json({ error: '이메일 발송에 실패했습니다: ' + error.message });
+    }
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });

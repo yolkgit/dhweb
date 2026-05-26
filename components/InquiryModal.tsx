@@ -24,15 +24,33 @@ const InquiryModal: React.FC = () => {
 
   if (!isInquiryModalOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("문의가 성공적으로 접수되었습니다. 빠른 시일 내에 답변 드리겠습니다.");
-    setIsInquiryModalOpen(false);
-    // Reset form
-    setName('');
-    setPhone('');
-    setEmail('');
-    setMessage('');
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, email, subject, message })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || '발송 중 오류가 발생했습니다.');
+      }
+      alert("문의가 성공적으로 접수되었습니다. 빠른 시일 내에 답변 드리겠습니다.");
+      setIsInquiryModalOpen(false);
+      // Reset form
+      setName('');
+      setPhone('');
+      setEmail('');
+      setMessage('');
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const productCategoryLabel = inquiryProduct 
@@ -147,10 +165,11 @@ const InquiryModal: React.FC = () => {
 
           <button 
             type="submit" 
-            className="w-full py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition shadow-lg shadow-emerald-100 flex justify-center items-center gap-2 text-sm"
+            disabled={isSubmitting}
+            className={`w-full py-3 ${isSubmitting ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'} text-white font-bold rounded-lg transition shadow-lg shadow-emerald-100 flex justify-center items-center gap-2 text-sm`}
           >
             <Send size={16} />
-            문의하기
+            {isSubmitting ? '발송 중...' : '문의하기'}
           </button>
         </form>
       </div>

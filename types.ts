@@ -70,6 +70,10 @@ export interface NavItem {
 
 export interface AppSettings {
   youtubeApiKey: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPass?: string;
 }
 
 // Hero Slide for Landing Page

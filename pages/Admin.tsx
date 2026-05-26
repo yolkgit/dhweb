@@ -1695,6 +1695,38 @@ const Admin: React.FC = () => {
                        <input type="text" name="fax" value={String(companyInfo.fax || '')} onChange={handleInfoChange} className="input-field" />
                      </div>
                    </div>
+                    <hr className="my-4"/>
+                    <h4 className="font-bold text-slate-800 mb-2">온라인 문의 수신 설정</h4>
+                    <div>
+                      <label className="label">수신자 이메일 (관리자 이메일)</label>
+                      <input type="text" name="email" value={String(companyInfo.email || '')} onChange={handleInfoChange} className="input-field" placeholder="admin@domain.com" />
+                      <p className="text-xs text-slate-400 mt-1">이메일 주소를 입력하면 고객이 온라인 문의를 남길 때 이 주소로 메일이 발송됩니다.</p>
+                    </div>
+                    
+                    <div className="bg-slate-50 p-4 rounded-lg mt-4 border border-slate-200">
+                      <h4 className="font-bold text-slate-700 mb-2 text-sm">SMTP 메일 발송 서버 설정 (Nodemailer)</h4>
+                      <p className="text-xs text-slate-500 mb-4">메일을 실제로 전송하기 위한 보내는 서버(예: Gmail, 네이버) 정보를 입력하세요.</p>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="label text-xs">SMTP Host</label>
+                          <input type="text" value={appSettings.smtpHost || ''} onChange={(e) => updateAppSettings({...appSettings, smtpHost: e.target.value})} className="input-field text-sm" placeholder="smtp.gmail.com" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">SMTP Port</label>
+                          <input type="number" value={appSettings.smtpPort || ''} onChange={(e) => updateAppSettings({...appSettings, smtpPort: parseInt(e.target.value, 10)})} className="input-field text-sm" placeholder="465" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="label text-xs">SMTP 아이디(이메일)</label>
+                          <input type="text" value={appSettings.smtpUser || ''} onChange={(e) => updateAppSettings({...appSettings, smtpUser: e.target.value})} className="input-field text-sm" placeholder="user@gmail.com" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">SMTP 비밀번호(앱 비밀번호)</label>
+                          <input type="password" value={appSettings.smtpPass || ''} onChange={(e) => updateAppSettings({...appSettings, smtpPass: e.target.value})} className="input-field text-sm" placeholder="password" />
+                        </div>
+                      </div>
+                    </div>
                    <div>
                      <label className="label">슬로건</label>
                      <textarea name="slogan" value={String(companyInfo.slogan || '')} onChange={handleInfoChange} className="input-field h-24 resize-none" />

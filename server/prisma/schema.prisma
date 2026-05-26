@@ -107,6 +107,10 @@ model Playlist {
 model AppSettings {
   id            Int     @id @default(1)
   youtubeApiKey String?
+  smtpHost      String?
+  smtpPort      Int?
+  smtpUser      String?
+  smtpPass      String?
 }
 
 model DesignSettings {
