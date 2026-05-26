@@ -57,6 +57,82 @@ const Admin: React.FC = () => {
     }
   }, [editingProduct]);
 
+
+  // Lab Equipment Drag and Drop
+  const [draggedLabId, setDraggedLabId] = useState<string | null>(null);
+  const [dragOverLabId, setDragOverLabId] = useState<string | null>(null);
+  const labDragCounterRef = useRef<Record<string, number>>({});
+
+  const handleDropLab = (droppedOnId: string) => {
+    if (!draggedLabId || draggedLabId === droppedOnId) {
+      setDraggedLabId(null);
+      setDragOverLabId(null);
+      labDragCounterRef.current = {};
+      return;
+    }
+    const draggedIdx = labEquipment.findIndex(i => i.id === draggedLabId);
+    const dropIdx = labEquipment.findIndex(i => i.id === droppedOnId);
+    if (draggedIdx !== -1 && dropIdx !== -1) {
+      const newLabs = [...labEquipment];
+      const [moved] = newLabs.splice(draggedIdx, 1);
+      newLabs.splice(dropIdx, 0, moved);
+      reorderLabEquipment(newLabs);
+    }
+    setDraggedLabId(null);
+    setDragOverLabId(null);
+    labDragCounterRef.current = {};
+  };
+
+  // Certification Drag and Drop
+  const [draggedCertId, setDraggedCertId] = useState<string | null>(null);
+  const [dragOverCertId, setDragOverCertId] = useState<string | null>(null);
+  const certDragCounterRef = useRef<Record<string, number>>({});
+
+  const handleDropCert = (droppedOnId: string) => {
+    if (!draggedCertId || draggedCertId === droppedOnId) {
+      setDraggedCertId(null);
+      setDragOverCertId(null);
+      certDragCounterRef.current = {};
+      return;
+    }
+    const draggedIdx = certifications.findIndex(c => c.id === draggedCertId);
+    const dropIdx = certifications.findIndex(c => c.id === droppedOnId);
+    if (draggedIdx !== -1 && dropIdx !== -1) {
+      const newCerts = [...certifications];
+      const [moved] = newCerts.splice(draggedIdx, 1);
+      newCerts.splice(dropIdx, 0, moved);
+      reorderCertifications(newCerts);
+    }
+    setDraggedCertId(null);
+    setDragOverCertId(null);
+    certDragCounterRef.current = {};
+  };
+
+  // Branch Drag and Drop
+  const [draggedBranchId, setDraggedBranchId] = useState<string | null>(null);
+  const [dragOverBranchId, setDragOverBranchId] = useState<string | null>(null);
+  const branchDragCounterRef = useRef<Record<string, number>>({});
+
+  const handleDropBranch = (droppedOnId: string) => {
+    if (!draggedBranchId || draggedBranchId === droppedOnId) {
+      setDraggedBranchId(null);
+      setDragOverBranchId(null);
+      branchDragCounterRef.current = {};
+      return;
+    }
+    const draggedIdx = branches.findIndex(b => b.id === draggedBranchId);
+    const dropIdx = branches.findIndex(b => b.id === droppedOnId);
+    if (draggedIdx !== -1 && dropIdx !== -1) {
+      const newBranches = [...branches];
+      const [moved] = newBranches.splice(draggedIdx, 1);
+      newBranches.splice(dropIdx, 0, moved);
+      reorderBranches(newBranches);
+    }
+    setDraggedBranchId(null);
+    setDragOverBranchId(null);
+    branchDragCounterRef.current = {};
+  };
+
   // --- Handlers ---
   const handleInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     updateCompanyInfo({ ...companyInfo, [e.target.name]: e.target.value } as any);
@@ -603,7 +679,42 @@ const Admin: React.FC = () => {
                  {!editingBranch ? (
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {branches.map((branch) => (
-                        <div key={branch.id} className="border border-slate-200 rounded-lg p-6 bg-white hover:shadow-md transition flex flex-col justify-between">
+                        <div 
+                          key={branch.id} 
+                          className={`border rounded-lg p-6 transition flex flex-col justify-between ${dragOverBranchId === branch.id ? (branches.findIndex(b => b.id === draggedBranchId) < branches.findIndex(b => b.id === branch.id) ? 'border-b-4 border-b-emerald-500 bg-emerald-50/30' : 'border-t-4 border-t-emerald-500 bg-emerald-50/30') : 'border-slate-200 bg-white hover:shadow-md'} ${draggedBranchId === branch.id ? 'opacity-40' : ''}`}
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggedBranchId(branch.id);
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('text/plain', branch.id);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedBranchId(null);
+                            setDragOverBranchId(null);
+                            branchDragCounterRef.current = {};
+                          }}
+                          onDragEnter={(e) => {
+                            e.preventDefault();
+                            if (!branchDragCounterRef.current[branch.id]) branchDragCounterRef.current[branch.id] = 0;
+                            branchDragCounterRef.current[branch.id]++;
+                            if (draggedBranchId && draggedBranchId !== branch.id) {
+                              setDragOverBranchId(branch.id);
+                            }
+                          }}
+                          onDragLeave={(e) => {
+                            e.preventDefault();
+                            if (branchDragCounterRef.current[branch.id]) branchDragCounterRef.current[branch.id]--;
+                            if (branchDragCounterRef.current[branch.id] <= 0) {
+                              branchDragCounterRef.current[branch.id] = 0;
+                              if (dragOverBranchId === branch.id) setDragOverBranchId(null);
+                            }
+                          }}
+                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            handleDropBranch(branch.id);
+                          }}
+                        >
                            <div>
                               <div className="flex items-center gap-2 mb-2">
                                 <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded uppercase">{branch.id}</span>
@@ -799,6 +910,9 @@ const Admin: React.FC = () => {
                             className="w-full flex items-center justify-between px-5 py-4 bg-slate-50 hover:bg-slate-100 transition text-left border-b border-slate-200"
                           >
                             <div className="flex items-center gap-3">
+                              <span className="text-slate-300 cursor-move hover:text-emerald-500 transition-colors shrink-0">
+                                <GripVertical size={20} />
+                              </span>
                               <div className="bg-emerald-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold">
                                 {catProducts.length}
                               </div>
@@ -1761,7 +1875,45 @@ const Admin: React.FC = () => {
                   {!editingLabItem ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {labEquipment.map(item => (
-                        <div key={item.id} className="border border-slate-200 p-4 rounded-lg flex items-center gap-4 bg-white hover:shadow-md transition">
+                        <div 
+                          key={item.id} 
+                          className={`border p-4 rounded-lg flex items-center gap-4 transition ${dragOverLabId === item.id ? (labEquipment.findIndex(i => i.id === draggedLabId) < labEquipment.findIndex(i => i.id === item.id) ? 'border-b-4 border-b-emerald-500 bg-emerald-50/30' : 'border-t-4 border-t-emerald-500 bg-emerald-50/30') : 'border-slate-200 bg-white hover:shadow-md'} ${draggedLabId === item.id ? 'opacity-40' : ''}`}
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggedLabId(item.id);
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('text/plain', item.id);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedLabId(null);
+                            setDragOverLabId(null);
+                            labDragCounterRef.current = {};
+                          }}
+                          onDragEnter={(e) => {
+                            e.preventDefault();
+                            if (!labDragCounterRef.current[item.id]) labDragCounterRef.current[item.id] = 0;
+                            labDragCounterRef.current[item.id]++;
+                            if (draggedLabId && draggedLabId !== item.id) {
+                              setDragOverLabId(item.id);
+                            }
+                          }}
+                          onDragLeave={(e) => {
+                            e.preventDefault();
+                            if (labDragCounterRef.current[item.id]) labDragCounterRef.current[item.id]--;
+                            if (labDragCounterRef.current[item.id] <= 0) {
+                              labDragCounterRef.current[item.id] = 0;
+                              if (dragOverLabId === item.id) setDragOverLabId(null);
+                            }
+                          }}
+                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            handleDropLab(item.id);
+                          }}
+                        >
+                          <span className="text-slate-300 cursor-move hover:text-emerald-500 transition-colors shrink-0">
+                            <GripVertical size={20} />
+                          </span>
                           <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
                              {item.imageUrl ? (
                                <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
@@ -1826,7 +1978,42 @@ const Admin: React.FC = () => {
                   {!editingCert ? (
                     <div className="space-y-3">
                        {certifications.map(cert => (
-                         <div key={cert.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg bg-white hover:shadow-sm">
+                         <div 
+                           key={cert.id} 
+                           className={`flex items-center justify-between p-4 border rounded-lg transition ${dragOverCertId === cert.id ? (certifications.findIndex(c => c.id === draggedCertId) < certifications.findIndex(c => c.id === cert.id) ? 'border-b-4 border-b-emerald-500 bg-emerald-50/30' : 'border-t-4 border-t-emerald-500 bg-emerald-50/30') : 'border-slate-200 bg-white hover:shadow-sm'} ${draggedCertId === cert.id ? 'opacity-40' : ''}`}
+                           draggable
+                           onDragStart={(e) => {
+                             setDraggedCertId(cert.id);
+                             e.dataTransfer.effectAllowed = 'move';
+                             e.dataTransfer.setData('text/plain', cert.id);
+                           }}
+                           onDragEnd={() => {
+                             setDraggedCertId(null);
+                             setDragOverCertId(null);
+                             certDragCounterRef.current = {};
+                           }}
+                           onDragEnter={(e) => {
+                             e.preventDefault();
+                             if (!certDragCounterRef.current[cert.id]) certDragCounterRef.current[cert.id] = 0;
+                             certDragCounterRef.current[cert.id]++;
+                             if (draggedCertId && draggedCertId !== cert.id) {
+                               setDragOverCertId(cert.id);
+                             }
+                           }}
+                           onDragLeave={(e) => {
+                             e.preventDefault();
+                             if (certDragCounterRef.current[cert.id]) certDragCounterRef.current[cert.id]--;
+                             if (certDragCounterRef.current[cert.id] <= 0) {
+                               certDragCounterRef.current[cert.id] = 0;
+                               if (dragOverCertId === cert.id) setDragOverCertId(null);
+                             }
+                           }}
+                           onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                           onDrop={(e) => {
+                             e.preventDefault();
+                             handleDropCert(cert.id);
+                           }}
+                         >
                             <div className="flex items-center gap-3">
                               <span className={`px-2 py-1 rounded text-xs font-bold ${cert.type === 'PATENT' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
                                 {cert.type === 'PATENT' ? '특허' : '인증'}
