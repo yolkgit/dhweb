@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Products from './pages/Products';
+import Certifications from './pages/Certifications';
 import Technology from './pages/Technology';
 import Contact from './pages/Contact';
 import Admin from './pages/Admin';
@@ -16,6 +17,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/certifications" element={<Certifications />} />
             <Route path="/technology" element={<Technology />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/admin" element={<Admin />} />

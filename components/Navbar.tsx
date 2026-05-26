@@ -16,6 +16,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled }) => {
   const navLinks = [
     { name: '홈', path: '/' },
     { name: '제품소개', path: '/products' },
+    { name: '인증및특허', path: '/certifications' },
     { name: '기술연구소', path: '/technology' },
     { name: '고객센터', path: '/contact' },
   ];
