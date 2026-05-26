@@ -77,11 +77,11 @@ app.get('/api/content', async (req, res) => {
          prisma.companyInfo.findFirst(),
          prisma.category.findMany({ orderBy: { sortOrder: 'asc' } }),
          prisma.product.findMany({ orderBy: { sortOrder: 'asc' } }),
-         prisma.certification.findMany(),
+         prisma.certification.findMany({ orderBy: { sortOrder: 'asc' } }),
          prisma.heroSlide.findMany({ orderBy: { order: 'asc' } }),
          prisma.designSettings.findFirst(),
          prisma.certificationMark.findMany(),
-         prisma.labEquipment.findMany(),
+         prisma.labEquipment.findMany({ orderBy: { sortOrder: 'asc' } }),
          prisma.faq.findMany(),
          prisma.logoSettings.findFirst(),
          prisma.branch.findMany(),
@@ -951,6 +951,45 @@ app.post('/api/inquiry', async (req, res) => {
     } catch (error) {
         console.error('Email send error:', error);
         res.status(500).json({ error: '이메일 발송에 실패했습니다: ' + error.message });
+    }
+});
+
+
+// Reorder Certifications
+app.put('/api/certifications/reorder', async (req, res) => {
+    try {
+        const ids = req.body;
+        await prisma.$transaction(
+            ids.map((id, index) =>
+                prisma.certification.update({
+                    where: { id },
+                    data: { sortOrder: index }
+                })
+            )
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to reorder certifications" });
+    }
+});
+
+// Reorder Lab Equipments
+app.put('/api/lab-equipments/reorder', async (req, res) => {
+    try {
+        const ids = req.body;
+        await prisma.$transaction(
+            ids.map((id, index) =>
+                prisma.labEquipment.update({
+                    where: { id },
+                    data: { sortOrder: index }
+                })
+            )
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to reorder lab equipments" });
     }
 });
 

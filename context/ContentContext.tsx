@@ -29,7 +29,6 @@ interface ContentContextType {
   labEquipment: LabEquipment[];
   addLabEquipment: (item: LabEquipment) => void;
   updateLabEquipment: (item: LabEquipment) => void;
-  deleteLabEquipment: (id: string) => void;
   appSettings: AppSettings;
   updateAppSettings: (settings: AppSettings) => void;
   heroSlides: HeroSlide[];
@@ -267,6 +266,23 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setLabEquipment(prev => prev.filter(l => l.id !== id));
     api.delete('lab-equipment', id);
   };
+  const reorderCertifications = (orderedCerts: Certification[]) => {
+    setCertifications(orderedCerts);
+    fetch('/api/certifications/reorder', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderedCerts.map(c => c.id))
+    }).catch(e => console.error('Failed to reorder certifications', e));
+  };
+  
+  const reorderLabEquipment = (orderedItems: LabEquipment[]) => {
+    setLabEquipment(orderedItems);
+    fetch('/api/lab-equipments/reorder', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderedItems.map(i => i.id))
+    }).catch(e => console.error('Failed to reorder lab equipments', e));
+  };
 
   const addHeroSlide = (slide: HeroSlide) => {
     setHeroSlides(prev => [...prev, slide]);
@@ -356,8 +372,8 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       products, addProduct, updateProduct, deleteProduct, reorderProducts,
       playlists, updatePlaylist,
       faqs, updateFaqs,
-      certifications, addCertification, updateCertification, deleteCertification,
-      labEquipment, addLabEquipment, updateLabEquipment, deleteLabEquipment,
+      certifications, addCertification, updateCertification, deleteCertification, reorderCertifications,
+      labEquipment, addLabEquipment, updateLabEquipment, deleteLabEquipment, reorderLabEquipment,
       heroSlides, addHeroSlide, updateHeroSlide, deleteHeroSlide,
       logoSettings, updateLogoSettings,
       designSettings, updateDesignSettings,

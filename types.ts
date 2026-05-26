@@ -53,6 +53,7 @@ export interface Certification {
   issuer: string;
   type: 'PATENT' | 'CERTIFICATE' | 'TEST_REPORT';
   pdfUrl?: string;
+  sortOrder?: number;
 }
 
 export interface LabEquipment {
@@ -61,6 +62,7 @@ export interface LabEquipment {
   desc: string;
   iconName: string;
   imageUrl?: string;
+  sortOrder?: number;
 }
 
 export interface NavItem {
