@@ -35,6 +35,7 @@ model Category {
   label                    String
   playlistId               String?
   representativeProductId  String?
+  slideImages              String?   // JSON string array of image URLs
   sortOrder                Int       @default(0)
   products                 Product[]
 }
@@ -55,6 +56,7 @@ model Product {
   msdsUrl          String?
   certificationMarkIds String? // JSON string or comma sep
   constructionImageUrl String?
+  sortOrder        Int      @default(0)
   createdAt        DateTime @default(now())
 }
 

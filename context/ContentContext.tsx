@@ -17,6 +17,7 @@ interface ContentContextType {
   addProduct: (product: Product) => void;
   updateProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
+  reorderProducts: (orderedProducts: Product[]) => void;
   playlists: CategoryPlaylists;
   updatePlaylist: (categoryId: string, playlistId: string) => void;
   faqs: typeof INITIAL_FAQS;
@@ -209,6 +210,15 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setProducts(prev => prev.filter(p => p.id !== id));
     api.delete('products', id);
   };
+  const reorderProducts = (orderedProducts: Product[]) => {
+    setProducts(orderedProducts);
+    // Send just the ordered IDs to the reorder endpoint
+    fetch('/api/products/reorder', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderedProducts.map(p => p.id))
+    }).catch(e => console.error('Failed to reorder products', e));
+  };
 
   const updatePlaylist = (categoryId: string, playlistId: string) => {
     const newData = { ...playlists, [categoryId]: playlistId };
@@ -332,7 +342,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <ContentContext.Provider value={{
       companyInfo, updateCompanyInfo,
       categories, addCategory, updateCategory, deleteCategory, reorderCategories,
-      products, addProduct, updateProduct, deleteProduct,
+      products, addProduct, updateProduct, deleteProduct, reorderProducts,
       playlists, updatePlaylist,
       faqs, updateFaqs,
       certifications, addCertification, updateCertification, deleteCertification,

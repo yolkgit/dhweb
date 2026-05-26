@@ -75,7 +75,7 @@ app.get('/api/content', async (req, res) => {
          prisma.appSettings.findFirst(),
          prisma.companyInfo.findFirst(),
          prisma.category.findMany({ orderBy: { sortOrder: 'asc' } }),
-         prisma.product.findMany(),
+         prisma.product.findMany({ orderBy: { sortOrder: 'asc' } }),
          prisma.certification.findMany(),
          prisma.heroSlide.findMany({ orderBy: { order: 'asc' } }),
          prisma.designSettings.findFirst(),
@@ -97,7 +97,8 @@ app.get('/api/content', async (req, res) => {
     const mappedCategories = categories.map(c => ({
       id: c.id,
       label: c.label,
-      representativeProductId: c.representativeProductId || null
+      representativeProductId: c.representativeProductId || null,
+      slideImages: c.slideImages ? JSON.parse(c.slideImages) : []
     }));
 
      // Process Products to parse JSON fields
@@ -147,8 +148,8 @@ app.post('/api/categories', async (req, res) => {
             for (const c of cat) {
                 await prisma.category.upsert({
                     where: { id: c.id },
-                    update: { label: c.label, representativeProductId: c.representativeProductId || null, sortOrder: c.sortOrder ?? 0 },
-                    create: { id: c.id, label: c.label, representativeProductId: c.representativeProductId || null, sortOrder: c.sortOrder ?? 0 }
+                    update: { label: c.label, representativeProductId: c.representativeProductId || null, sortOrder: c.sortOrder ?? 0, slideImages: c.slideImages ? JSON.stringify(c.slideImages) : null },
+                    create: { id: c.id, label: c.label, representativeProductId: c.representativeProductId || null, sortOrder: c.sortOrder ?? 0, slideImages: c.slideImages ? JSON.stringify(c.slideImages) : null }
                 });
             }
             return res.json({ success: true });
@@ -159,7 +160,7 @@ app.post('/api/categories', async (req, res) => {
         const nextOrder = (maxOrder._max.sortOrder ?? -1) + 1;
         
         const result = await prisma.category.create({
-             data: { id: cat.id, label: cat.label, representativeProductId: cat.representativeProductId || null, sortOrder: cat.sortOrder ?? nextOrder }
+             data: { id: cat.id, label: cat.label, representativeProductId: cat.representativeProductId || null, sortOrder: cat.sortOrder ?? nextOrder, slideImages: cat.slideImages ? JSON.stringify(cat.slideImages) : null }
         });
         res.json(result);
     } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
@@ -186,6 +187,7 @@ app.put('/api/categories/:id', async (req, res) => {
         const cat = req.body;
         const updateData = { label: cat.label, representativeProductId: cat.representativeProductId || null };
         if (cat.sortOrder !== undefined) updateData.sortOrder = cat.sortOrder;
+        if (cat.slideImages !== undefined) updateData.slideImages = cat.slideImages ? JSON.stringify(cat.slideImages) : null;
         const result = await prisma.category.update({
             where: { id: req.params.id },
             data: updateData
@@ -219,9 +221,16 @@ app.post('/api/playlists', async (req, res) => {
 app.post('/api/products', async (req, res) => {
     try {
         const prod = req.body;
+        // Auto-assign sortOrder to be at the end within this category
+        const maxOrder = await prisma.product.aggregate({
+            where: { categoryId: prod.category },
+            _max: { sortOrder: true }
+        });
+        const nextOrder = (maxOrder._max.sortOrder ?? -1) + 1;
+        
         const result = await prisma.product.create({
             data: {
-                id: prod.id, // Using client-generated ID is fine
+                id: prod.id,
                 name: prod.name,
                 categoryId: prod.category,
                 description: prod.description,
@@ -234,10 +243,27 @@ app.post('/api/products', async (req, res) => {
                 specUrl: prod.specUrl,
                 msdsUrl: prod.msdsUrl,
                 certificationMarkIds: JSON.stringify(prod.certificationMarkIds || []),
-                constructionImageUrl: prod.constructionImageUrl || null
+                constructionImageUrl: prod.constructionImageUrl || null,
+                sortOrder: prod.sortOrder ?? nextOrder
             }
         });
         res.json(result);
+    } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
+});
+
+// --- Product Reorder (must be before :id route) ---
+app.put('/api/products/reorder', async (req, res) => {
+    try {
+        const orderedIds = req.body; // Array of product IDs in new order
+        await prisma.$transaction(
+            orderedIds.map((id, index) =>
+                prisma.product.update({
+                    where: { id },
+                    data: { sortOrder: index }
+                })
+            )
+        );
+        res.json({ success: true });
     } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
 });
 
@@ -245,23 +271,25 @@ app.put('/api/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const prod = req.body;
+        const updateData = {
+            name: prod.name,
+            categoryId: prod.category,
+            description: prod.description,
+            features: JSON.stringify(prod.features),
+            specs: JSON.stringify(prod.specs || {}),
+            specTable: prod.specTable ? JSON.stringify(prod.specTable) : null,
+            imageUrl: prod.imageUrl,
+            isNew: prod.isNew,
+            isEco: prod.isEco,
+            specUrl: prod.specUrl,
+            msdsUrl: prod.msdsUrl,
+            certificationMarkIds: JSON.stringify(prod.certificationMarkIds || []),
+            constructionImageUrl: prod.constructionImageUrl || null
+        };
+        if (prod.sortOrder !== undefined) updateData.sortOrder = prod.sortOrder;
         const result = await prisma.product.update({
             where: { id },
-            data: {
-                name: prod.name,
-                categoryId: prod.category,
-                description: prod.description,
-                features: JSON.stringify(prod.features),
-                specs: JSON.stringify(prod.specs || {}),
-                specTable: prod.specTable ? JSON.stringify(prod.specTable) : null,
-                imageUrl: prod.imageUrl,
-                isNew: prod.isNew,
-                isEco: prod.isEco,
-                specUrl: prod.specUrl,
-                msdsUrl: prod.msdsUrl,
-                certificationMarkIds: JSON.stringify(prod.certificationMarkIds || []),
-                constructionImageUrl: prod.constructionImageUrl || null
-            }
+            data: updateData
         });
         res.json(result);
     } catch(e) { console.error(e); res.status(500).json({error: "Failed"}); }
@@ -628,8 +656,8 @@ app.post("/api/data/:key", async (req, res) => {
              for (const item of data) {
                  await tx.category.upsert({
                      where: { id: item.id },
-                     update: { label: item.label, representativeProductId: item.representativeProductId || null, sortOrder: item.sortOrder ?? orderCounter },
-                     create: { id: item.id, label: item.label, representativeProductId: item.representativeProductId || null, sortOrder: item.sortOrder ?? orderCounter }
+                     update: { label: item.label, representativeProductId: item.representativeProductId || null, sortOrder: item.sortOrder ?? orderCounter, slideImages: item.slideImages ? JSON.stringify(item.slideImages) : null },
+                     create: { id: item.id, label: item.label, representativeProductId: item.representativeProductId || null, sortOrder: item.sortOrder ?? orderCounter, slideImages: item.slideImages ? JSON.stringify(item.slideImages) : null }
                  });
                  orderCounter++;
              }
@@ -646,6 +674,7 @@ app.post("/api/data/:key", async (req, res) => {
 
     if (key === 'products') {
         await prisma.$transaction(async (tx) => {
+            let orderCounter = 0;
             for (const item of data) {
                 const productData = {
                     id: item.id,
@@ -661,8 +690,10 @@ app.post("/api/data/:key", async (req, res) => {
                     specUrl: item.specUrl,
                     msdsUrl: item.msdsUrl,
                     certificationMarkIds: JSON.stringify(item.certificationMarkIds || []),
-                    constructionImageUrl: item.constructionImageUrl || null
+                    constructionImageUrl: item.constructionImageUrl || null,
+                    sortOrder: item.sortOrder ?? orderCounter
                 };
+                orderCounter++;
                 
                 await tx.product.upsert({
                    where: { id: item.id },

@@ -3,6 +3,7 @@ export interface Category {
   id: string;
   label: string;
   representativeProductId?: string;
+  slideImages?: string[]; // Array of image URLs for slideshow when no video
 }
 
 export type ProductCategory = string; // Alias for string IDs

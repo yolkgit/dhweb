@@ -13,7 +13,7 @@ const Admin: React.FC = () => {
   const { 
     companyInfo, updateCompanyInfo, 
     categories, addCategory, updateCategory, deleteCategory, reorderCategories,
-    products, addProduct, updateProduct, deleteProduct,
+    products, addProduct, updateProduct, deleteProduct, reorderProducts,
     playlists, updatePlaylist,
     labEquipment, addLabEquipment, updateLabEquipment, deleteLabEquipment,
     certifications, addCertification, updateCertification, deleteCertification,
@@ -43,6 +43,12 @@ const Admin: React.FC = () => {
   const [draggedCategoryId, setDraggedCategoryId] = useState<string | null>(null);
   const [dragOverCategoryId, setDragOverCategoryId] = useState<string | null>(null);
   const dragCounterRef = useRef<Record<string, number>>({});
+
+  // Drag-and-drop state for product reordering
+  const [draggedProductId, setDraggedProductId] = useState<string | null>(null);
+  const [dragOverProductId, setDragOverProductId] = useState<string | null>(null);
+  const prodDragCounterRef = useRef<Record<string, number>>({});
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
   // Sync table specs toggle
   useEffect(() => {
@@ -765,38 +771,200 @@ const Admin: React.FC = () => {
             {/* --- PRODUCTS TAB --- */}
             {activeTab === 'PRODUCTS' && (
               <div className="animate-fade-in-up">
-                <div className="flex justify-between items-center mb-8">
-                   <h2 className="text-2xl font-bold text-slate-800">제품 목록 ({products.length})</h2>
+                <div className="flex justify-between items-center mb-4">
+                   <h2 className="text-2xl font-bold text-slate-800">제품 관리 ({products.length})</h2>
                    <button onClick={createNewProduct} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 shadow-md transition">
                      <Plus size={20} /> 새 제품 추가
                    </button>
                 </div>
+                <p className="text-sm text-slate-500 mb-6">카테고리별로 제품이 분류됩니다. <span className="text-emerald-600 font-medium">⬍ 드래그하여 순서를 변경</span>하면 제품소개 페이지에 그대로 반영됩니다.</p>
 
                 {!editingProduct ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {products.map(product => {
-                      const catLabel = categories.find(c => c.id === product.category)?.label || product.category;
+                  <div className="space-y-6">
+                    {categories.map((cat) => {
+                      const catProducts = products.filter(p => p.category === cat.id);
+                      const isCollapsed = collapsedCategories.has(cat.id);
                       return (
-                        <div key={product.id} className="border border-slate-200 rounded-xl p-4 flex gap-4 bg-white hover:shadow-md transition group">
-                          <div className="w-24 h-24 bg-slate-100 rounded-lg overflow-hidden shrink-0">
-                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <span className="text-xs font-bold text-emerald-600 uppercase">{catLabel}</span>
-                                <h3 className="font-bold text-slate-900">{product.name}</h3>
+                        <div key={cat.id} className="border border-slate-200 rounded-xl bg-white overflow-hidden">
+                          {/* Category Header */}
+                          <button
+                            onClick={() => {
+                              setCollapsedCategories(prev => {
+                                const next = new Set(prev);
+                                if (next.has(cat.id)) next.delete(cat.id);
+                                else next.add(cat.id);
+                                return next;
+                              });
+                            }}
+                            className="w-full flex items-center justify-between px-5 py-4 bg-slate-50 hover:bg-slate-100 transition text-left border-b border-slate-200"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="bg-emerald-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold">
+                                {catProducts.length}
                               </div>
-                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => setEditingProduct(product)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded"><Edit2 size={16} /></button>
-                                <button onClick={() => { if(confirm('삭제하시겠습니까?')) deleteProduct(product.id) }} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                              <div>
+                                <h3 className="font-bold text-slate-800 text-lg">{cat.label}</h3>
+                                <span className="text-xs text-slate-400 font-mono">{cat.id}</span>
                               </div>
                             </div>
-                            <p className="text-sm text-slate-500 line-clamp-2 mt-1">{product.description}</p>
-                          </div>
+                            <svg className={`w-5 h-5 text-slate-400 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                          </button>
+
+                          {/* Products List */}
+                          {!isCollapsed && (
+                            <div className="divide-y divide-slate-100">
+                              {catProducts.length === 0 ? (
+                                <div className="px-5 py-8 text-center text-sm text-slate-400 italic">
+                                  이 카테고리에 등록된 제품이 없습니다.
+                                </div>
+                              ) : (
+                                catProducts.map((product, pIdx) => {
+                                  const isDragging = draggedProductId === product.id;
+                                  const isDragOver = dragOverProductId === product.id && draggedProductId !== product.id;
+                                  return (
+                                    <div
+                                      key={product.id}
+                                      draggable
+                                      onDragStart={(e) => {
+                                        setDraggedProductId(product.id);
+                                        e.dataTransfer.effectAllowed = 'move';
+                                        e.dataTransfer.setData('text/plain', product.id);
+                                      }}
+                                      onDragEnd={() => {
+                                        setDraggedProductId(null);
+                                        setDragOverProductId(null);
+                                        prodDragCounterRef.current = {};
+                                      }}
+                                      onDragEnter={(e) => {
+                                        e.preventDefault();
+                                        if (!prodDragCounterRef.current[product.id]) prodDragCounterRef.current[product.id] = 0;
+                                        prodDragCounterRef.current[product.id]++;
+                                        if (draggedProductId && draggedProductId !== product.id) {
+                                          // Only allow drag within same category
+                                          const draggedProduct = products.find(p => p.id === draggedProductId);
+                                          if (draggedProduct && draggedProduct.category === product.category) {
+                                            setDragOverProductId(product.id);
+                                          }
+                                        }
+                                      }}
+                                      onDragLeave={(e) => {
+                                        e.preventDefault();
+                                        if (prodDragCounterRef.current[product.id]) prodDragCounterRef.current[product.id]--;
+                                        if (prodDragCounterRef.current[product.id] <= 0) {
+                                          prodDragCounterRef.current[product.id] = 0;
+                                          if (dragOverProductId === product.id) {
+                                            setDragOverProductId(null);
+                                          }
+                                        }
+                                      }}
+                                      onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
+                                      }}
+                                      onDrop={(e) => {
+                                        e.preventDefault();
+                                        prodDragCounterRef.current = {};
+                                        if (!draggedProductId || draggedProductId === product.id) return;
+                                        const draggedProduct = products.find(p => p.id === draggedProductId);
+                                        if (!draggedProduct || draggedProduct.category !== product.category) return;
+                                        // Reorder within category: rebuild full product array
+                                        const thisCatProducts = products.filter(p => p.category === cat.id);
+                                        const otherProducts = products.filter(p => p.category !== cat.id);
+                                        const fromIdx = thisCatProducts.findIndex(p => p.id === draggedProductId);
+                                        const toIdx = thisCatProducts.findIndex(p => p.id === product.id);
+                                        if (fromIdx === -1 || toIdx === -1) return;
+                                        const reordered = [...thisCatProducts];
+                                        const [moved] = reordered.splice(fromIdx, 1);
+                                        reordered.splice(toIdx, 0, moved);
+                                        // Rebuild full product array preserving other categories
+                                        const newProducts: typeof products = [];
+                                        categories.forEach(c => {
+                                          if (c.id === cat.id) {
+                                            newProducts.push(...reordered);
+                                          } else {
+                                            newProducts.push(...products.filter(p => p.category === c.id));
+                                          }
+                                        });
+                                        // Add any products with unknown category
+                                        const allCatIds = categories.map(c => c.id);
+                                        newProducts.push(...products.filter(p => !allCatIds.includes(p.category)));
+                                        reorderProducts(newProducts);
+                                        setDraggedProductId(null);
+                                        setDragOverProductId(null);
+                                      }}
+                                      className={`flex items-center gap-4 px-5 py-3 transition-all cursor-grab active:cursor-grabbing ${
+                                        isDragging
+                                          ? 'opacity-40 bg-slate-100'
+                                          : isDragOver
+                                            ? 'bg-emerald-50 ring-2 ring-emerald-300 ring-inset'
+                                            : 'bg-white hover:bg-slate-50'
+                                      }`}
+                                      style={{ transition: isDragging ? 'none' : 'all 0.15s ease' }}
+                                    >
+                                      <div className="text-slate-300 hover:text-slate-500 transition cursor-grab active:cursor-grabbing shrink-0" title="드래그하여 순서 변경">
+                                        <GripVertical size={18} />
+                                      </div>
+                                      <div className="bg-slate-100 text-slate-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+                                        {pIdx + 1}
+                                      </div>
+                                      <div className="w-14 h-14 bg-slate-100 rounded-lg overflow-hidden shrink-0">
+                                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <h3 className="font-bold text-slate-900 truncate">{product.name}</h3>
+                                          {product.isNew && <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">NEW</span>}
+                                          {product.isEco && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">ECO</span>}
+                                        </div>
+                                        <p className="text-xs text-slate-400 truncate mt-0.5">{product.description}</p>
+                                      </div>
+                                      <div className="flex gap-1 shrink-0">
+                                        <button onClick={(e) => { e.stopPropagation(); setEditingProduct(product); }} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition">
+                                          <Edit2 size={15} />
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); if(confirm('삭제하시겠습니까?')) deleteProduct(product.id) }} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition">
+                                          <Trash2 size={15} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
+                    {/* Products with no/unknown category */}
+                    {(() => {
+                      const allCatIds = categories.map(c => c.id);
+                      const uncategorized = products.filter(p => !allCatIds.includes(p.category));
+                      if (uncategorized.length === 0) return null;
+                      return (
+                        <div className="border border-amber-200 rounded-xl bg-amber-50 overflow-hidden">
+                          <div className="px-5 py-4 bg-amber-100 border-b border-amber-200">
+                            <h3 className="font-bold text-amber-800">⚠ 미분류 제품 ({uncategorized.length})</h3>
+                          </div>
+                          <div className="divide-y divide-amber-100">
+                            {uncategorized.map(product => (
+                              <div key={product.id} className="flex items-center gap-4 px-5 py-3 bg-white hover:bg-amber-50 transition">
+                                <div className="w-14 h-14 bg-slate-100 rounded-lg overflow-hidden shrink-0">
+                                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-bold text-slate-900 truncate">{product.name}</h3>
+                                  <span className="text-xs text-amber-600 font-mono">카테고리: {product.category}</span>
+                                </div>
+                                <div className="flex gap-1 shrink-0">
+                                  <button onClick={() => setEditingProduct(product)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition"><Edit2 size={15} /></button>
+                                  <button onClick={() => { if(confirm('삭제하시겠습니까?')) deleteProduct(product.id) }} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition"><Trash2 size={15} /></button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <form onSubmit={handleProductSubmit} className="bg-slate-50 border border-slate-200 rounded-xl p-6 relative">
@@ -1680,84 +1848,148 @@ const Admin: React.FC = () => {
              )}
 
              {activeTab === 'VIDEOS' && (
-               <div className="animate-fade-in-up">
-                 <h2 className="text-2xl font-bold text-slate-800 mb-2">영상 설정 및 관리</h2>
-                 
-                 {/* API Key Setting */}
-                 <div className="bg-slate-800 text-white p-6 rounded-xl mb-8 shadow-lg">
-                    <div className="flex items-start gap-4">
-                       <div className="bg-emerald-500/20 p-3 rounded-lg text-emerald-400 shrink-0">
-                          <Key size={24} />
-                       </div>
-                       <div className="flex-1">
-                          <h3 className="text-lg font-bold mb-1">YouTube Data API Key 설정</h3>
-                          <p className="text-slate-300 text-sm mb-4">
-                            재생목록을 안정적으로 불러오기 위해 Google Cloud Console에서 발급받은 API Key를 입력해주세요. <br/>
-                            키가 없으면 불안정한 RSS 방식(백업)으로 작동하여 오류가 발생할 수 있습니다.
-                          </p>
-                          <div className="flex gap-2">
-                             <input 
-                               type="text" 
-                               value={appSettings.youtubeApiKey}
-                               onChange={(e) => updateAppSettings({...appSettings, youtubeApiKey: e.target.value})}
-                               placeholder="AIzaSy..."
-                               className="flex-1 bg-slate-900 border border-slate-700 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-mono"
-                             />
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-
-                 <h3 className="text-xl font-bold text-slate-800 mb-4">카테고리별 재생목록 연결</h3>
-                 
-                 <div className="grid grid-cols-1 gap-6">
-                   {categories.map((category) => (
-                     <div key={category.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                           <Youtube className="text-red-600" size={28} />
-                           <div>
-                             <h4 className="font-bold text-slate-900 text-lg">{category.label}</h4>
-                             <p className="text-xs text-slate-400">ID: {category.id}</p>
+                <div className="animate-fade-in-up">
+                  <h2 className="text-2xl font-bold text-slate-800 mb-2">영상 및 슬라이드 관리</h2>
+                  <p className="text-sm text-slate-500 mb-6">카테고리별 YouTube 영상 링크를 연결하거나, 영상이 없는 경우 <span className="text-emerald-600 font-medium">사진 슬라이드</span>를 업로드할 수 있습니다.</p>
+                  
+                  {/* API Key Setting */}
+                  <div className="bg-slate-800 text-white p-6 rounded-xl mb-8 shadow-lg">
+                     <div className="flex items-start gap-4">
+                        <div className="bg-emerald-500/20 p-3 rounded-lg text-emerald-400 shrink-0">
+                           <Key size={24} />
+                        </div>
+                        <div className="flex-1">
+                           <h3 className="text-lg font-bold mb-1">YouTube Data API Key 설정</h3>
+                           <p className="text-slate-300 text-sm mb-4">
+                             재생목록을 안정적으로 불러오기 위해 Google Cloud Console에서 발급받은 API Key를 입력해주세요. <br/>
+                             키가 없으면 불안정한 RSS 방식(백업)으로 작동하여 오류가 발생할 수 있습니다.
+                           </p>
+                           <div className="flex gap-2">
+                              <input 
+                                type="text" 
+                                value={appSettings.youtubeApiKey}
+                                onChange={(e) => updateAppSettings({...appSettings, youtubeApiKey: e.target.value})}
+                                placeholder="AIzaSy..."
+                                className="flex-1 bg-slate-900 border border-slate-700 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-mono"
+                              />
                            </div>
                         </div>
-                        
-                        <div>
-                           <label className="label">YouTube 링크 (Playlist or Video URL)</label>
-                           <input 
-                             type="text" 
-                             className="input-field" 
-                             placeholder="예: https://www.youtube.com/playlist?list=... 또는 https://youtu.be/..."
-                             value={playlists[category.id] || ''}
-                             onChange={(e) => handlePlaylistChange(category.id, e.target.value)}
-                           />
-                           {playlists[category.id] && (
-                             <p className="text-xs text-emerald-600 mt-2 flex items-center">
-                               <Info size={12} className="mr-1" /> 
-                               ID 감지됨: {playlists[category.id]} 
-                               {playlists[category.id].startsWith('PL') || playlists[category.id].startsWith('UU') ? ' (재생목록)' : ' (개별 동영상)'}
-                             </p>
-                           )}
-                        </div>
                      </div>
-                   ))}
-                 </div>
-                 
-                 <div className="mt-8 p-4 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-800 text-sm">
-                   <span className="font-bold">✨ 자동 저장됨:</span> 입력하는 즉시 웹사이트에 반영됩니다.
-                 </div>
-              </div>
-             )}
-          </div>
-        </div>
-      </div>
-      <style>{`
-        .label { display: block; font-size: 0.875rem; font-weight: 700; color: #475569; margin-bottom: 0.5rem; }
-        .input-field { width: 100%; padding: 0.5rem 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; outline: none; transition: all; font-size: 0.875rem; }
-        .input-field:focus { border-color: #059669; box-shadow: 0 0 0 2px #a7f3d0; }
-        .input-field:disabled { background-color: #f1f5f9; cursor: not-allowed; color: #94a3b8; }
-      `}</style>
-    </div>
-  );
+                  </div>
+
+                  <h3 className="text-xl font-bold text-slate-800 mb-4">카테고리별 영상/슬라이드 설정</h3>
+                  
+                  <div className="grid grid-cols-1 gap-6">
+                    {categories.map((category) => {
+                      const hasPlaylist = !!(playlists[category.id] && playlists[category.id].trim());
+                      const slideImages = category.slideImages || [];
+                      return (
+                      <div key={category.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                         <div className="flex items-center gap-3 px-6 py-4 bg-slate-50 border-b border-slate-200">
+                            <div className="bg-emerald-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold">
+                              {category.label.charAt(0)}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-slate-900 text-lg">{category.label}</h4>
+                              <p className="text-xs text-slate-400">ID: {category.id}</p>
+                            </div>
+                            {hasPlaylist ? (
+                              <span className="ml-auto text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                                <Youtube size={12} /> 영상 연결됨
+                              </span>
+                            ) : slideImages.length > 0 ? (
+                              <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                                <ImageIcon size={12} /> 사진 {slideImages.length}장
+                              </span>
+                            ) : (
+                              <span className="ml-auto text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-full font-bold">
+                                미설정
+                              </span>
+                            )}
+                         </div>
+                         
+                         <div className="p-6 space-y-6">
+                           {/* YouTube Link */}
+                           <div>
+                              <label className="label flex items-center gap-2">
+                                <Youtube size={16} className="text-red-500" /> YouTube 링크 (Playlist or Video URL)
+                              </label>
+                              <input 
+                                type="text" 
+                                className="input-field" 
+                                placeholder="예: https://www.youtube.com/playlist?list=... 또는 https://youtu.be/..."
+                                value={playlists[category.id] || ''}
+                                onChange={(e) => handlePlaylistChange(category.id, e.target.value)}
+                              />
+                              {playlists[category.id] && (
+                                <p className="text-xs text-emerald-600 mt-2 flex items-center">
+                                  <Info size={12} className="mr-1" /> 
+                                  ID 감지됨: {playlists[category.id]} 
+                                  {playlists[category.id].startsWith('PL') || playlists[category.id].startsWith('UU') ? ' (재생목록)' : ' (개별 동영상)'}
+                                </p>
+                              )}
+                           </div>
+
+                           {/* Photo Slideshow - shown when no playlist */}
+                           {!hasPlaylist && (
+                             <div className="border-t border-slate-200 pt-6">
+                               <div className="flex items-center justify-between mb-3">
+                                 <label className="label mb-0 flex items-center gap-2">
+                                   <ImageIcon size={16} className="text-emerald-600" /> 사진 슬라이드 (영상 미등록 시 표시)
+                                 </label>
+                               </div>
+                               <p className="text-xs text-slate-500 mb-4">YouTube 영상 링크가 없으면 아래 업로드한 사진이 메인페이지에서 슬라이드로 표시됩니다.</p>
+
+                               {/* Uploaded Images Grid */}
+                               {slideImages.length > 0 && (
+                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                   {slideImages.map((imgUrl: string, imgIdx: number) => (
+                                     <div key={imgIdx} className="relative group aspect-video bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                                       <img src={imgUrl} alt={`슬라이드 ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                                         <button 
+                                           onClick={() => {
+                                             const newImages = slideImages.filter((_: string, i: number) => i !== imgIdx);
+                                             updateCategory({ ...category, slideImages: newImages });
+                                           }}
+                                           className="opacity-0 group-hover:opacity-100 transition-opacity bg-red-600 text-white p-2 rounded-full shadow-lg hover:bg-red-700"
+                                           title="삭제"
+                                         >
+                                           <Trash2 size={14} />
+                                         </button>
+                                       </div>
+                                       <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
+                                         {imgIdx + 1}
+                                       </div>
+                                     </div>
+                                   ))}
+                                 </div>
+                               )}
+
+                               {/* Add Image Button */}
+                               <ImageInput 
+                                 label="슬라이드 사진 추가" 
+                                 value="" 
+                                 onChange={(url) => {
+                                   if (url) {
+                                     const newImages = [...slideImages, url];
+                                     updateCategory({ ...category, slideImages: newImages });
+                                   }
+                                 }} 
+                               />
+                             </div>
+                           )}
+                         </div>
+                      </div>
+                    );
+                    })}
+                  </div>
+                  
+                  <div className="mt-8 p-4 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-800 text-sm">
+                    <span className="font-bold">✨ 자동 저장됨:</span> 입력하는 즉시 웹사이트에 반영됩니다.
+                  </div>
+               </div>
+              )}
 };
 
 export default Admin;
