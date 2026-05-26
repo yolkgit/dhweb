@@ -15,9 +15,23 @@ const Products: React.FC = () => {
     ...categories
   ];
 
+  // Sort products based on category order first, then product's relative order
+  const sortedProducts = [...products].sort((a, b) => {
+    const catAIndex = categories.findIndex(c => c.id === a.category);
+    const catBIndex = categories.findIndex(c => c.id === b.category);
+    
+    if (catAIndex !== catBIndex) {
+      if (catAIndex === -1) return 1;
+      if (catBIndex === -1) return -1;
+      return catAIndex - catBIndex;
+    }
+    
+    return products.indexOf(a) - products.indexOf(b);
+  });
+
   const filteredProducts = activeCategory === 'ALL' 
-    ? products 
-    : products.filter(p => p.category === activeCategory);
+    ? sortedProducts 
+    : sortedProducts.filter(p => p.category === activeCategory);
 
   return (
     <div className="bg-slate-50 min-h-screen">
