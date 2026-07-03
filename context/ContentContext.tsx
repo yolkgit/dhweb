@@ -1,7 +1,7 @@
 // ... (imports remain similar, but we remove INITIAL_* usage for state initialization if we want strictly server-first, 
 // but for safety we can keep them as fallbacks or initial values while loading)
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { COMPANY_INFO as INITIAL_INFO, PRODUCTS as INITIAL_PRODUCTS, FAQS as INITIAL_FAQS, DEFAULT_PLAYLISTS as INITIAL_PLAYLISTS, CERTIFICATIONS as INITIAL_CERTS, LAB_EQUIPMENT as INITIAL_LAB, HERO_SLIDES as INITIAL_SLIDES, LOGO_SETTINGS as INITIAL_LOGO, DESIGN_SETTINGS as INITIAL_DESIGN, CERT_MARKS as INITIAL_CERT_MARKS, INITIAL_CATEGORIES, CALCULATOR_SETTINGS as INITIAL_CALCULATOR, INITIAL_BRANCHES } from '../constants';
+import { COMPANY_INFO as INITIAL_INFO, PRODUCTS as INITIAL_PRODUCTS, FAQS as INITIAL_FAQS, DEFAULT_PLAYLISTS as INITIAL_PLAYLISTS, CERTIFICATIONS as INITIAL_CERTS, LAB_EQUIPMENT as INITIAL_LAB, HERO_SLIDES as INITIAL_SLIDES, LOGO_SETTINGS as INITIAL_LOGO, DESIGN_SETTINGS as INITIAL_DESIGN, CERT_MARKS as INITIAL_CERT_MARKS, INITIAL_CATEGORIES, CALCULATOR_SETTINGS as INITIAL_CALCULATOR, INITIAL_BRANCHES, DEFAULT_NAV_ITEMS } from '../constants';
 import { Product, Certification, LabEquipment, CategoryPlaylists, AppSettings, HeroSlide, LogoSettings, DesignSettings, CertificationMark, Category, CalculatorSettings, Branch } from '../types';
 
 interface ContentContextType {
@@ -121,7 +121,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [faqs, setFaqs] = useState(INITIAL_FAQS);
   const [certifications, setCertifications] = useState<Certification[]>(INITIAL_CERTS);
   const [labEquipment, setLabEquipment] = useState<LabEquipment[]>(INITIAL_LAB);
-  const [appSettings, setAppSettings] = useState<AppSettings>({ youtubeApiKey: '' });
+  const [appSettings, setAppSettings] = useState<AppSettings>({ youtubeApiKey: '', navItems: DEFAULT_NAV_ITEMS });
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(INITIAL_SLIDES);
   const [logoSettings, setLogoSettings] = useState<LogoSettings>(INITIAL_LOGO);
   const [designSettings, setDesignSettings] = useState<DesignSettings>(INITIAL_DESIGN);
@@ -142,7 +142,13 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (data.faqs) setFaqs(data.faqs);
       if (data.certifications) setCertifications(data.certifications);
       if (data.labEquipment) setLabEquipment(data.labEquipment);
-      if (data.appSettings && Object.keys(data.appSettings).length > 0) setAppSettings(data.appSettings);
+      if (data.appSettings && Object.keys(data.appSettings).length > 0) {
+        const incoming = data.appSettings;
+        setAppSettings({
+          ...incoming,
+          navItems: (incoming.navItems && incoming.navItems.length > 0) ? incoming.navItems : DEFAULT_NAV_ITEMS
+        });
+      }
       if (data.heroSlides) setHeroSlides(data.heroSlides);
       if (data.logoSettings && Object.keys(data.logoSettings).length > 0) setLogoSettings(data.logoSettings);
       if (data.designSettings && Object.keys(data.designSettings).length > 0) setDesignSettings(data.designSettings);

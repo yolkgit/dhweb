@@ -118,8 +118,14 @@ app.get('/api/content', async (req, res) => {
          vision: JSON.parse(companyInfo.vision || '[]')
      } : {};
 
+     // Strip the admin password from the public payload; parse navItems JSON for the frontend.
+     const safeAppSettings = appSettings ? (() => {
+         const { adminPassword, navItems, ...rest } = appSettings;
+         return { ...rest, navItems: navItems ? JSON.parse(navItems) : null };
+     })() : {};
+
      res.json({
-         appSettings: appSettings || {},
+         appSettings: safeAppSettings,
          companyInfo: processedCompanyInfo || {},
          categories: mappedCategories || [],
          products: processedProducts || [],
@@ -553,6 +559,44 @@ app.post('/api/app-settings', async (req, res) => {
     }
 });
 
+// --- Admin Password Auth ---
+// Verify admin password (server-side; never exposed via /api/content).
+app.post('/api/admin/verify', async (req, res) => {
+    try {
+        const { password } = req.body;
+        const settings = await prisma.appSettings.findFirst();
+        const stored = (settings && settings.adminPassword) ? settings.adminPassword : '0000';
+        res.json({ ok: String(password) === String(stored) });
+    } catch (error) {
+        console.error("Admin verify error:", error);
+        res.status(500).json({ error: "Failed to verify" });
+    }
+});
+
+// Change admin password (requires current password).
+app.post('/api/admin/change-password', async (req, res) => {
+    try {
+        const { current, next } = req.body;
+        const settings = await prisma.appSettings.findFirst();
+        const stored = (settings && settings.adminPassword) ? settings.adminPassword : '0000';
+        if (String(current) !== String(stored)) {
+            return res.status(400).json({ error: '현재 비밀번호가 일치하지 않습니다.' });
+        }
+        if (!next || String(next).length < 4) {
+            return res.status(400).json({ error: '새 비밀번호는 4자리 이상이어야 합니다.' });
+        }
+        await prisma.appSettings.upsert({
+            where: { id: 1 },
+            update: { adminPassword: String(next) },
+            create: { id: 1, adminPassword: String(next) }
+        });
+        res.json({ ok: true });
+    } catch (error) {
+        console.error("Change password error:", error);
+        res.status(500).json({ error: "Failed to change password" });
+    }
+});
+
 // Update Design Settings
 app.post('/api/design-settings', async (req, res) => {
     try {
@@ -585,13 +629,15 @@ app.post("/api/data/:key", async (req, res) => {
     }
     
     if (key === 'appSettings') {
-        const { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass } = data;
+        const { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass, navItems } = data;
+        // navItems: undefined => don't touch; array => store as JSON string.
+        const navItemsStr = navItems !== undefined ? JSON.stringify(navItems) : undefined;
         const updated = await prisma.appSettings.upsert({
             where: { id: 1 },
-            update: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass },
-            create: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass }
+            update: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass, navItems: navItemsStr },
+            create: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass, navItems: navItemsStr }
         });
-        return res.json(updated);
+        return res.json({ success: true });
     }
 
     if (key === 'designSettings') {

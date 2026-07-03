@@ -27,7 +27,69 @@ const Admin: React.FC = () => {
     resetToDefaults 
   } = useContent();
 
-  const [activeTab, setActiveTab] = useState<'INFO' | 'CATEGORIES' | 'PRODUCTS' | 'VIDEOS' | 'TECHNOLOGY' | 'DESIGN' | 'MARKS' | 'HERO' | 'CALCULATOR' | 'CONTACT'>('PRODUCTS');
+  const [activeTab, setActiveTab] = useState<'INFO' | 'CATEGORIES' | 'PRODUCTS' | 'VIDEOS' | 'TECHNOLOGY' | 'DESIGN' | 'MARKS' | 'HERO' | 'CALCULATOR' | 'CONTACT' | 'MENU' | 'SETTINGS'>('PRODUCTS');
+
+  // --- Admin password gate ---
+  const [authed, setAuthed] = useState<boolean>(() => sessionStorage.getItem('dhweb_admin_authed') === '1');
+  const [pwInput, setPwInput] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwChecking, setPwChecking] = useState(false);
+
+  // --- Change password form ---
+  const [curPw, setCurPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [pwChangeMsg, setPwChangeMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError('');
+    setPwChecking(true);
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwInput }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        sessionStorage.setItem('dhweb_admin_authed', '1');
+        setAuthed(true);
+        setPwInput('');
+      } else {
+        setPwError('비밀번호가 올바르지 않습니다.');
+      }
+    } catch {
+      setPwError('서버 연결에 실패했습니다.');
+    } finally {
+      setPwChecking(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwChangeMsg(null);
+    if (newPw !== confirmPw) {
+      setPwChangeMsg({ type: 'err', text: '새 비밀번호가 서로 일치하지 않습니다.' });
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: curPw, next: newPw }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setPwChangeMsg({ type: 'ok', text: '비밀번호가 변경되었습니다.' });
+        setCurPw(''); setNewPw(''); setConfirmPw('');
+      } else {
+        setPwChangeMsg({ type: 'err', text: data.error || '비밀번호 변경에 실패했습니다.' });
+      }
+    } catch {
+      setPwChangeMsg({ type: 'err', text: '서버 연결에 실패했습니다.' });
+    }
+  };
   
   // Edit States
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -401,6 +463,44 @@ const Admin: React.FC = () => {
     });
   };
 
+  // --- Password gate: block the whole admin until verified ---
+  if (!authed) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4">
+        <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm">
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-3">
+              <Key size={26} />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900">관리자 로그인</h1>
+            <p className="text-sm text-slate-400 mt-1">비밀번호를 입력하세요.</p>
+          </div>
+          <input
+            type="password"
+            autoFocus
+            value={pwInput}
+            onChange={(e) => setPwInput(e.target.value)}
+            className="input-field text-center tracking-widest"
+            placeholder="비밀번호"
+          />
+          {pwError && <p className="text-sm text-red-500 mt-2 text-center">{pwError}</p>}
+          <button
+            type="submit"
+            disabled={pwChecking}
+            className="w-full mt-4 bg-emerald-600 text-white py-3 rounded-lg font-bold hover:bg-emerald-700 transition disabled:opacity-60"
+          >
+            {pwChecking ? '확인 중...' : '로그인'}
+          </button>
+          <Link to="/" className="block text-center text-xs text-slate-400 mt-4 hover:text-slate-600">← 홈으로 돌아가기</Link>
+        </form>
+        <style>{`
+          .input-field { width: 100%; padding: 0.5rem 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; outline: none; font-size: 0.875rem; }
+          .input-field:focus { border-color: #059669; box-shadow: 0 0 0 2px #a7f3d0; }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 pb-20">
       <div className="bg-slate-900 text-white pt-24 pb-12 px-4 shadow-lg">
@@ -410,8 +510,9 @@ const Admin: React.FC = () => {
             <p className="text-slate-400 mt-2">웹사이트의 콘텐츠와 디자인을 실시간으로 관리하세요.</p>
           </div>
           <div className="flex gap-3">
-             <Link 
+             <Link
                to="/"
+               onClick={() => { sessionStorage.removeItem('dhweb_admin_authed'); setAuthed(false); }}
                className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 border border-slate-700 rounded-lg hover:bg-slate-700 hover:text-white transition font-bold text-sm"
              >
                <LogOut size={16} /> 나가기
@@ -443,6 +544,8 @@ const Admin: React.FC = () => {
                 { id: 'VIDEOS', label: '영상 관리 (Videos)' },
                 { id: 'CONTACT', label: '고객센터 관리 (Customer Center)' },
                 { id: 'CALCULATOR', label: '계산기 설정 (Calculator)' },
+                { id: 'MENU', label: '헤더 메뉴 (Header Menu)' },
+                { id: 'SETTINGS', label: '설정 (Settings)' },
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -2223,6 +2326,110 @@ const Admin: React.FC = () => {
                   </div>
                </div>
               )}
+
+            {/* --- HEADER MENU TAB --- */}
+            {activeTab === 'MENU' && (() => {
+              const items = appSettings.navItems || [];
+              const save = (next: typeof items) => updateAppSettings({ ...appSettings, navItems: next });
+              const patch = (idx: number, p: Partial<(typeof items)[number]>) => save(items.map((it, i) => i === idx ? { ...it, ...p } : it));
+              const move = (idx: number, dir: number) => {
+                const j = idx + dir;
+                if (j < 0 || j >= items.length) return;
+                const next = [...items];
+                [next[idx], next[j]] = [next[j], next[idx]];
+                save(next);
+              };
+              const remove = (idx: number) => save(items.filter((_, i) => i !== idx));
+              const add = () => save([...items, { id: `nav_${Date.now()}`, label: '새 메뉴', path: '/', visible: true }]);
+              return (
+                <div className="animate-fade-in-up">
+                  <h2 className="text-2xl font-bold text-slate-800 mb-2">헤더 메뉴 관리</h2>
+                  <p className="text-sm text-slate-500 mb-6">상단 헤더에 표시되는 메뉴를 추가·삭제하거나 숨김/순서를 변경할 수 있습니다. 변경 즉시 사이트에 반영됩니다.</p>
+
+                  <datalist id="nav-paths">
+                    <option value="/">홈</option>
+                    <option value="/products">제품소개</option>
+                    <option value="/certifications">인증및특허</option>
+                    <option value="/technology">기술연구소</option>
+                    <option value="/contact">고객센터</option>
+                  </datalist>
+
+                  <div className="space-y-2">
+                    {items.length === 0 && (
+                      <div className="text-center text-sm text-slate-400 py-8 bg-white rounded-lg border border-slate-200">
+                        메뉴가 없습니다. 아래 '메뉴 추가' 버튼으로 추가하세요.
+                      </div>
+                    )}
+                    {items.map((item, idx) => (
+                      <div key={item.id} className={`flex flex-wrap items-center gap-2 bg-white p-3 rounded-lg border transition ${item.visible ? 'border-slate-200' : 'border-slate-200 bg-slate-50 opacity-70'}`}>
+                        <div className="flex flex-col">
+                          <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} className="text-slate-400 hover:text-emerald-600 disabled:opacity-30 leading-none">▲</button>
+                          <button type="button" onClick={() => move(idx, 1)} disabled={idx === items.length - 1} className="text-slate-400 hover:text-emerald-600 disabled:opacity-30 leading-none">▼</button>
+                        </div>
+                        <div className="text-xs text-slate-300 w-4 text-center">{idx + 1}</div>
+                        <div className="flex-1 min-w-[140px]">
+                          <label className="text-[10px] text-slate-400 font-bold">메뉴 이름</label>
+                          <input value={item.label} onChange={(e) => patch(idx, { label: e.target.value })} className="input-field" placeholder="메뉴 이름" />
+                        </div>
+                        <div className="flex-1 min-w-[140px]">
+                          <label className="text-[10px] text-slate-400 font-bold">경로 (URL)</label>
+                          <input value={item.path} onChange={(e) => patch(idx, { path: e.target.value })} list="nav-paths" className="input-field" placeholder="/products" />
+                        </div>
+                        <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border cursor-pointer select-none text-sm font-bold self-end mb-0.5" style={{ borderColor: item.visible ? '#a7f3d0' : '#e2e8f0' }}>
+                          <input type="checkbox" checked={item.visible} onChange={(e) => patch(idx, { visible: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500" />
+                          <span className={item.visible ? 'text-emerald-600' : 'text-slate-400'}>{item.visible ? '표시' : '숨김'}</span>
+                        </label>
+                        <button type="button" onClick={() => remove(idx)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition self-end mb-0.5" title="메뉴 삭제">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button type="button" onClick={add} className="mt-4 flex items-center gap-2 text-sm font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-4 py-2 rounded-lg hover:bg-emerald-100 transition">
+                    <Plus size={16} /> 메뉴 추가
+                  </button>
+
+                  <div className="mt-8 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm">
+                    * '숨김'으로 설정하면 메뉴가 사이트에서 보이지 않지만 데이터는 유지됩니다. 새 메뉴의 경로는 실제 존재하는 페이지(예: /products)여야 정상 동작합니다.
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* --- SETTINGS TAB --- */}
+            {activeTab === 'SETTINGS' && (
+              <div className="animate-fade-in-up">
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">설정</h2>
+                <p className="text-sm text-slate-500 mb-6">관리자 비밀번호를 변경할 수 있습니다.</p>
+
+                <form onSubmit={handleChangePassword} className="bg-white rounded-xl border border-slate-200 p-6 max-w-md">
+                  <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Key size={18} className="text-emerald-600" /> 관리자 비밀번호 변경</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="label">현재 비밀번호</label>
+                      <input type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} className="input-field" placeholder="현재 비밀번호 (초기값: 0000)" required />
+                    </div>
+                    <div>
+                      <label className="label">새 비밀번호</label>
+                      <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} className="input-field" placeholder="4자리 이상" required />
+                    </div>
+                    <div>
+                      <label className="label">새 비밀번호 확인</label>
+                      <input type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} className="input-field" placeholder="새 비밀번호 재입력" required />
+                    </div>
+                  </div>
+                  {pwChangeMsg && (
+                    <p className={`text-sm mt-3 ${pwChangeMsg.type === 'ok' ? 'text-emerald-600' : 'text-red-500'}`}>{pwChangeMsg.text}</p>
+                  )}
+                  <button type="submit" className="w-full mt-5 bg-emerald-600 text-white py-3 rounded-lg font-bold hover:bg-emerald-700 transition">비밀번호 변경</button>
+                </form>
+
+                <div className="mt-6 p-4 bg-amber-50 text-amber-800 rounded-lg text-sm max-w-md">
+                  * 비밀번호는 서버에 저장되며 모든 기기에서 동일하게 적용됩니다. 초기 비밀번호는 <span className="font-bold">0000</span> 입니다.
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -67,8 +67,10 @@ export interface LabEquipment {
 }
 
 export interface NavItem {
+  id: string;
   label: string;
   path: string;
+  visible: boolean;
 }
 
 export interface AppSettings {
@@ -77,6 +79,7 @@ export interface AppSettings {
   smtpPort?: number;
   smtpUser?: string;
   smtpPass?: string;
+  navItems?: NavItem[];
 }
 
 // Hero Slide for Landing Page

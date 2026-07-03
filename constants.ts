@@ -1,5 +1,5 @@
 
-import { Product, Certification, LabEquipment, CategoryPlaylists, HeroSlide, LogoSettings, DesignSettings, CertificationMark, Category, CalculatorSettings, Branch } from './types';
+import { Product, Certification, LabEquipment, CategoryPlaylists, HeroSlide, LogoSettings, DesignSettings, CertificationMark, Category, CalculatorSettings, Branch, NavItem } from './types';
 
 export const COMPANY_INFO = {
   name: "(주)다현산업",
@@ -224,10 +224,19 @@ export const INITIAL_BRANCHES: Branch[] = [
     address: '대전광역시 유성구 유성대로', 
     phone: '042-000-0000' 
   },
-  { 
-    id: 'gw', 
-    name: '강원 지점', 
-    address: '강원도 원주시', 
-    phone: '033-000-0000' 
+  {
+    id: 'gw',
+    name: '강원 지점',
+    address: '강원도 원주시',
+    phone: '033-000-0000'
   }
+];
+
+// Default header navigation menu (used until admin customizes it)
+export const DEFAULT_NAV_ITEMS: NavItem[] = [
+  { id: 'home', label: '홈', path: '/', visible: true },
+  { id: 'products', label: '제품소개', path: '/products', visible: true },
+  { id: 'certifications', label: '인증및특허', path: '/certifications', visible: true },
+  { id: 'technology', label: '기술연구소', path: '/technology', visible: true },
+  { id: 'contact', label: '고객센터', path: '/contact', visible: true },
 ];

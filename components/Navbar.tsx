@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Phone, Settings, Globe } from 'lucide-react';
+import { Menu, X, Phone, Globe } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
+import { DEFAULT_NAV_ITEMS } from '../constants';
 import Logo from './Logo';
 
 interface NavbarProps {
@@ -9,17 +10,15 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ scrolled }) => {
-  const { companyInfo, designSettings, currentLang, toggleLanguage } = useContent();
+  const { companyInfo, designSettings, appSettings, currentLang, toggleLanguage } = useContent();
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
-  const navLinks = [
-    { name: '홈', path: '/' },
-    { name: '제품소개', path: '/products' },
-    { name: '인증및특허', path: '/certifications' },
-    { name: '기술연구소', path: '/technology' },
-    { name: '고객센터', path: '/contact' },
-  ];
+  // Header menu is admin-configurable: only visible items are shown.
+  const source = (appSettings.navItems && appSettings.navItems.length > 0) ? appSettings.navItems : DEFAULT_NAV_ITEMS;
+  const navLinks = source
+    .filter(item => item.visible)
+    .map(item => ({ name: item.label, path: item.path }));
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -112,10 +111,6 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled }) => {
                <span>{currentLang === 'ko' ? 'ENG' : 'KOR'}</span>
             </button>
             
-            <Link to="/admin" className={`p-2 rounded-full hover:bg-white/20 transition ${scrolled ? 'text-slate-500 hover:bg-slate-100' : 'text-white'}`} title="관리자">
-              <Settings size={20} />
-            </Link>
-
             {/* Desktop 'Contact Us' button removed as per user request (Mobile only) */}
           </div>
 
@@ -133,9 +128,6 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled }) => {
                <Globe size={14} />
                <span>{currentLang === 'ko' ? 'EN' : 'KR'}</span>
             </button>
-             <Link to="/admin" className={`p-2 ${scrolled || isOpen ? 'text-slate-900' : 'text-white'}`}>
-                <Settings size={24} />
-             </Link>
             <button
               onClick={() => setIsOpen(!isOpen)}
               className={`p-2 rounded-md ${scrolled || isOpen ? 'text-slate-900' : 'text-white'}`}

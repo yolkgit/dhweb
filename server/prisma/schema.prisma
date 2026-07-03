@@ -113,6 +113,8 @@ model AppSettings {
   smtpPort      Int?
   smtpUser      String?
   smtpPass      String?
+  adminPassword String? @default("0000")
+  navItems      String? @db.Text
 }
 
 model DesignSettings {
