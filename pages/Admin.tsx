@@ -27,7 +27,7 @@ const Admin: React.FC = () => {
     resetToDefaults 
   } = useContent();
 
-  const [activeTab, setActiveTab] = useState<'INFO' | 'CATEGORIES' | 'PRODUCTS' | 'VIDEOS' | 'TECHNOLOGY' | 'DESIGN' | 'MARKS' | 'HERO' | 'CALCULATOR' | 'CONTACT' | 'MENU' | 'SETTINGS'>('PRODUCTS');
+  const [activeTab, setActiveTab] = useState<'INFO' | 'CATEGORIES' | 'PRODUCTS' | 'VIDEOS' | 'TECHNOLOGY' | 'DESIGN' | 'MARKS' | 'HERO' | 'CALCULATOR' | 'CONTACT' | 'MENU' | 'GLOSSARY' | 'SETTINGS'>('PRODUCTS');
 
   // --- Admin password gate ---
   const [authed, setAuthed] = useState<boolean>(() => sessionStorage.getItem('dhweb_admin_authed') === '1');
@@ -545,6 +545,7 @@ const Admin: React.FC = () => {
                 { id: 'CONTACT', label: '고객센터 관리 (Customer Center)' },
                 { id: 'CALCULATOR', label: '계산기 설정 (Calculator)' },
                 { id: 'MENU', label: '헤더 메뉴 (Header Menu)' },
+                { id: 'GLOSSARY', label: '용어집/번역 (Glossary)' },
                 { id: 'SETTINGS', label: '설정 (Settings)' },
               ].map(tab => (
                 <button
@@ -2392,6 +2393,62 @@ const Admin: React.FC = () => {
 
                   <div className="mt-8 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm">
                     * '숨김'으로 설정하면 메뉴가 사이트에서 보이지 않지만 데이터는 유지됩니다. 새 메뉴의 경로는 실제 존재하는 페이지(예: /products)여야 정상 동작합니다.
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* --- GLOSSARY TAB --- */}
+            {activeTab === 'GLOSSARY' && (() => {
+              const terms = appSettings.glossary || [];
+              const save = (next: typeof terms) => updateAppSettings({ ...appSettings, glossary: next });
+              const patch = (idx: number, p: Partial<(typeof terms)[number]>) => save(terms.map((t, i) => i === idx ? { ...t, ...p } : t));
+              const remove = (idx: number) => save(terms.filter((_, i) => i !== idx));
+              const add = () => save([{ from: '', to: '' }, ...terms]);
+              return (
+                <div className="animate-fade-in-up">
+                  <h2 className="text-2xl font-bold text-slate-800 mb-2">용어집 / 영문 번역 보정</h2>
+                  <p className="text-sm text-slate-500 mb-4">
+                    사이트는 구글 번역으로 영문이 자동 생성됩니다. 건설재료 전문용어가 어색하게 번역될 때, 아래에
+                    <span className="font-bold text-slate-700"> ‘바꿀 표현 → 올바른 영문’</span>을 등록하면 영문 페이지에서 자동으로 교정됩니다.
+                  </p>
+                  <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-sm mb-6 space-y-1">
+                    <p>· <span className="font-bold">바꿀 표현</span>에는 영문 페이지에 <span className="font-bold">실제로 잘못 나오는 표현</span>(예: <code className="bg-white px-1 rounded">circulating aggregate</code>)이나 번역되지 않은 <span className="font-bold">한글 용어</span>(예: <code className="bg-white px-1 rounded">순환골재</code>)를 넣습니다.</p>
+                    <p>· <span className="font-bold">올바른 영문</span>에 원하는 전문용어(예: <code className="bg-white px-1 rounded">recycled aggregate</code>)를 넣습니다.</p>
+                    <p>· 확인 방법: 상단 <span className="font-bold">ENG</span> 버튼으로 영문 전환 후, 어색한 용어를 찾아 여기에 추가하세요. (영문 표현은 대소문자 구분 없음)</p>
+                  </div>
+
+                  <button type="button" onClick={add} className="mb-4 flex items-center gap-2 text-sm font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-4 py-2 rounded-lg hover:bg-emerald-100 transition">
+                    <Plus size={16} /> 용어 추가
+                  </button>
+
+                  <div className="space-y-2">
+                    {terms.length === 0 && (
+                      <div className="text-center text-sm text-slate-400 py-8 bg-white rounded-lg border border-slate-200">
+                        등록된 용어가 없습니다. '용어 추가'로 시작하세요.
+                      </div>
+                    )}
+                    {terms.map((term, idx) => (
+                      <div key={idx} className="flex flex-wrap items-end gap-2 bg-white p-3 rounded-lg border border-slate-200">
+                        <div className="text-xs text-slate-300 w-5 text-center pb-2.5">{idx + 1}</div>
+                        <div className="flex-1 min-w-[160px]">
+                          <label className="text-[10px] text-slate-400 font-bold">바꿀 표현 (영문 오역 또는 한글)</label>
+                          <input value={term.from} onChange={(e) => patch(idx, { from: e.target.value })} className="input-field" placeholder="circulating aggregate / 순환골재" />
+                        </div>
+                        <div className="text-slate-400 pb-2.5">→</div>
+                        <div className="flex-1 min-w-[160px]">
+                          <label className="text-[10px] text-slate-400 font-bold">올바른 영문</label>
+                          <input value={term.to} onChange={(e) => patch(idx, { to: e.target.value })} className="input-field" placeholder="recycled aggregate" />
+                        </div>
+                        <button type="button" onClick={() => remove(idx)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition" title="삭제">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-8 p-4 bg-amber-50 text-amber-800 rounded-lg text-sm">
+                    * 교정은 영문(ENG) 보기에서만 적용됩니다. 너무 일반적인 단어(예: ‘포장’처럼 여러 뜻이 있는 말)는 의도치 않은 곳까지 바뀔 수 있으니 구체적인 표현으로 등록하세요.
                   </div>
                 </div>
               );

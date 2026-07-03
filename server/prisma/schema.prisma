@@ -115,6 +115,7 @@ model AppSettings {
   smtpPass      String?
   adminPassword String? @default("0000")
   navItems      String? @db.Text
+  glossary      String? @db.Text
 }
 
 model DesignSettings {

@@ -118,10 +118,14 @@ app.get('/api/content', async (req, res) => {
          vision: JSON.parse(companyInfo.vision || '[]')
      } : {};
 
-     // Strip the admin password from the public payload; parse navItems JSON for the frontend.
+     // Strip the admin password from the public payload; parse JSON fields for the frontend.
      const safeAppSettings = appSettings ? (() => {
-         const { adminPassword, navItems, ...rest } = appSettings;
-         return { ...rest, navItems: navItems ? JSON.parse(navItems) : null };
+         const { adminPassword, navItems, glossary, ...rest } = appSettings;
+         return {
+             ...rest,
+             navItems: navItems ? JSON.parse(navItems) : null,
+             glossary: glossary ? JSON.parse(glossary) : null
+         };
      })() : {};
 
      res.json({
@@ -629,13 +633,14 @@ app.post("/api/data/:key", async (req, res) => {
     }
     
     if (key === 'appSettings') {
-        const { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass, navItems } = data;
-        // navItems: undefined => don't touch; array => store as JSON string.
+        const { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass, navItems, glossary } = data;
+        // undefined => don't touch; array => store as JSON string.
         const navItemsStr = navItems !== undefined ? JSON.stringify(navItems) : undefined;
+        const glossaryStr = glossary !== undefined ? JSON.stringify(glossary) : undefined;
         const updated = await prisma.appSettings.upsert({
             where: { id: 1 },
-            update: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass, navItems: navItemsStr },
-            create: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass, navItems: navItemsStr }
+            update: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass, navItems: navItemsStr, glossary: glossaryStr },
+            create: { youtubeApiKey, smtpHost, smtpPort, smtpUser, smtpPass, navItems: navItemsStr, glossary: glossaryStr }
         });
         return res.json({ success: true });
     }

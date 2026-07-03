@@ -6,6 +6,7 @@ import UsageCalculator from './UsageCalculator';
 import InquiryModal from './InquiryModal';
 import { useContent } from '../context/ContentContext';
 import { getSquareCropDataUrl } from '../utils/imageHelpers';
+import { installGlossaryCorrector } from '../utils/glossary';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,8 +14,23 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [scrolled, setScrolled] = React.useState(false);
-  const { logoSettings } = useContent();
+  const { logoSettings, appSettings, currentLang } = useContent();
   const location = useLocation();
+
+  // Keep latest glossary/language available to the DOM corrector without reinstalling it.
+  const glossaryRef = React.useRef(appSettings.glossary || []);
+  glossaryRef.current = appSettings.glossary || [];
+  const langRef = React.useRef(currentLang);
+  langRef.current = currentLang;
+
+  // Correct Google Translate's English output with the construction-materials glossary.
+  useEffect(() => {
+    const cleanup = installGlossaryCorrector(
+      () => glossaryRef.current || [],
+      () => langRef.current === 'en'
+    );
+    return cleanup;
+  }, []);
 
   // Scroll to top on route change
   // Scroll to top on route change

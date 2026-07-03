@@ -1,5 +1,5 @@
 
-import { Product, Certification, LabEquipment, CategoryPlaylists, HeroSlide, LogoSettings, DesignSettings, CertificationMark, Category, CalculatorSettings, Branch, NavItem } from './types';
+import { Product, Certification, LabEquipment, CategoryPlaylists, HeroSlide, LogoSettings, DesignSettings, CertificationMark, Category, CalculatorSettings, Branch, NavItem, GlossaryTerm } from './types';
 
 export const COMPANY_INFO = {
   name: "(주)다현산업",
@@ -239,4 +239,45 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
   { id: 'certifications', label: '인증및특허', path: '/certifications', visible: true },
   { id: 'technology', label: '기술연구소', path: '/technology', visible: true },
   { id: 'contact', label: '고객센터', path: '/contact', visible: true },
+];
+
+// Construction-materials glossary: corrects Google Translate's generic English into
+// professional terminology. Each entry replaces `from` (a Korean term left untranslated
+// OR a common machine-translation output) with the correct English `to`.
+// Admins can edit this in the '용어집' tab after seeing what the live English page shows.
+export const DEFAULT_GLOSSARY: GlossaryTerm[] = [
+  // --- Korean terms (fire when Google Translate leaves them untranslated) ---
+  { from: '아스팔트 콘크리트', to: 'asphalt concrete' },
+  { from: '아스콘', to: 'asphalt concrete' },
+  { from: '순환골재', to: 'recycled aggregate' },
+  { from: '순환 골재', to: 'recycled aggregate' },
+  { from: '재생아스팔트', to: 'recycled asphalt (RAP)' },
+  { from: '상온아스팔트', to: 'cold-mix asphalt' },
+  { from: '가열아스팔트', to: 'hot-mix asphalt' },
+  { from: '개질아스팔트', to: 'modified asphalt' },
+  { from: '유화아스팔트', to: 'asphalt emulsion' },
+  { from: '채움재', to: 'mineral filler' },
+  { from: '역청', to: 'bitumen' },
+  { from: '굵은골재', to: 'coarse aggregate' },
+  { from: '잔골재', to: 'fine aggregate' },
+  { from: '골재', to: 'aggregate' },
+  { from: '보조기층', to: 'subbase course' },
+  { from: '기층', to: 'base course' },
+  { from: '표층', to: 'surface course' },
+  { from: '노반', to: 'roadbed' },
+  { from: '그레이팅', to: 'grating' },
+  { from: '배수성 아스팔트', to: 'porous asphalt' },
+  { from: '투수 아스팔트', to: 'permeable asphalt' },
+  { from: '다짐', to: 'compaction' },
+  { from: '밀입도', to: 'dense-graded' },
+  { from: '개립도', to: 'open-graded' },
+  // --- Common machine-translation mistakes (English → correct English) ---
+  { from: 'circulating aggregate', to: 'recycled aggregate' },
+  { from: 'recycling aggregate', to: 'recycled aggregate' },
+  { from: 'room temperature asphalt', to: 'cold-mix asphalt' },
+  { from: 'normal temperature asphalt', to: 'cold-mix asphalt' },
+  { from: 'heated asphalt', to: 'hot-mix asphalt' },
+  { from: 'reforming asphalt', to: 'modified asphalt' },
+  { from: 'emulsified asphalt', to: 'asphalt emulsion' },
+  { from: 'filling material', to: 'mineral filler' },
 ];

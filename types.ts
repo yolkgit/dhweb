@@ -73,6 +73,13 @@ export interface NavItem {
   visible: boolean;
 }
 
+// A single glossary correction: replace `from` (Google Translate's wrong output,
+// or an untranslated Korean term) with `to` (the correct professional English).
+export interface GlossaryTerm {
+  from: string;
+  to: string;
+}
+
 export interface AppSettings {
   youtubeApiKey: string;
   smtpHost?: string;
@@ -80,6 +87,7 @@ export interface AppSettings {
   smtpUser?: string;
   smtpPass?: string;
   navItems?: NavItem[];
+  glossary?: GlossaryTerm[];
 }
 
 // Hero Slide for Landing Page
