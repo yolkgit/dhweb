@@ -6,6 +6,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { PrismaClient } from '@prisma/client';
+import geoip from 'geoip-lite';
 
 const prisma = new PrismaClient();
 
@@ -921,6 +922,85 @@ app.get("/api/uploads", async (req, res) => {
   } catch (error) {
     console.error("Failed to list uploads:", error);
     res.status(500).json({ error: "Failed to list files" });
+  }
+});
+
+// --- Access Analytics (self-hosted page-view tracking) ---
+
+// Extract the real client IP (behind nginx reverse proxy which sets X-Forwarded-For).
+function getClientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (xff) return String(xff).split(',')[0].trim();
+  return (req.socket && req.socket.remoteAddress) || '';
+}
+
+// Reduce a referrer URL to a host, categorizing internal/direct traffic.
+function normalizeReferrer(referrer, ownHost) {
+  if (!referrer) return 'direct';
+  try {
+    const host = new URL(referrer).hostname.replace(/^www\./, '');
+    if (ownHost && host && ownHost.replace(/^www\./, '').endsWith(host)) return 'internal';
+    return host || 'direct';
+  } catch {
+    return 'direct';
+  }
+}
+
+// Record a page view. Fire-and-forget from the client.
+app.post('/api/track', async (req, res) => {
+  try {
+    let { path: p, referrer } = req.body || {};
+    if (!p || typeof p !== 'string') return res.json({ ok: false });
+    // Never track the admin area itself.
+    if (p.startsWith('/admin')) return res.json({ ok: true, skipped: true });
+    p = p.slice(0, 512);
+
+    const ip = getClientIp(req);
+    const cleanIp = ip.replace(/^::ffff:/, '');
+    const geo = cleanIp ? geoip.lookup(cleanIp) : null;
+    const country = (geo && geo.country) ? geo.country : 'unknown';
+
+    const ownHost = req.headers.host || '';
+    const ref = normalizeReferrer(referrer, ownHost).slice(0, 255);
+
+    await prisma.pageView.create({ data: { path: p, referrer: ref, country } });
+    res.json({ ok: true });
+  } catch (error) {
+    // Analytics must never break the site.
+    res.json({ ok: false });
+  }
+});
+
+// Aggregated stats for the admin dashboard.
+app.get('/api/track/stats', async (req, res) => {
+  try {
+    const days = Math.min(365, Math.max(1, parseInt(req.query.days, 10) || 30));
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const [total, byDayRaw, topPaths, topReferrers, topCountries] = await Promise.all([
+      prisma.pageView.count({ where: { createdAt: { gte: since } } }),
+      prisma.$queryRaw`SELECT DATE(createdAt) AS d, COUNT(*) AS c FROM PageView WHERE createdAt >= ${since} GROUP BY d ORDER BY d ASC`,
+      prisma.pageView.groupBy({ by: ['path'], where: { createdAt: { gte: since } }, _count: { path: true }, orderBy: { _count: { path: 'desc' } }, take: 15 }),
+      prisma.pageView.groupBy({ by: ['referrer'], where: { createdAt: { gte: since } }, _count: { referrer: true }, orderBy: { _count: { referrer: 'desc' } }, take: 15 }),
+      prisma.pageView.groupBy({ by: ['country'], where: { createdAt: { gte: since } }, _count: { country: true }, orderBy: { _count: { country: 'desc' } }, take: 20 }),
+    ]);
+
+    const byDay = byDayRaw.map(r => ({
+      date: (r.d instanceof Date) ? r.d.toISOString().slice(0, 10) : String(r.d).slice(0, 10),
+      count: Number(r.c),
+    }));
+
+    res.json({
+      total,
+      days,
+      byDay,
+      topPaths: topPaths.map(r => ({ path: r.path, count: r._count.path })),
+      topReferrers: topReferrers.map(r => ({ referrer: r.referrer, count: r._count.referrer })),
+      topCountries: topCountries.map(r => ({ country: r.country, count: r._count.country })),
+    });
+  } catch (error) {
+    console.error('Stats error:', error);
+    res.status(500).json({ error: 'Failed to load stats' });
   }
 });
 

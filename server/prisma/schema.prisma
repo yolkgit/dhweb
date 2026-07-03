@@ -118,6 +118,18 @@ model AppSettings {
   glossary      String? @db.Text
 }
 
+// One row per page view for the self-hosted access analytics.
+model PageView {
+  id        Int      @id @default(autoincrement())
+  path      String   @db.VarChar(512)
+  referrer  String   @default("direct") @db.VarChar(255) // referrer host, or 'direct' / 'internal'
+  country   String   @default("unknown") @db.VarChar(64) // 2-letter country code from GeoIP
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([path])
+}
+
 model DesignSettings {
   id               Int    @id @default(1)
   fontFamily       String @default("Noto Sans KR")

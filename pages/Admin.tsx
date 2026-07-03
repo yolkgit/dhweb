@@ -27,7 +27,30 @@ const Admin: React.FC = () => {
     resetToDefaults 
   } = useContent();
 
-  const [activeTab, setActiveTab] = useState<'INFO' | 'CATEGORIES' | 'PRODUCTS' | 'VIDEOS' | 'TECHNOLOGY' | 'DESIGN' | 'MARKS' | 'HERO' | 'CALCULATOR' | 'CONTACT' | 'MENU' | 'GLOSSARY' | 'SETTINGS'>('PRODUCTS');
+  const [activeTab, setActiveTab] = useState<'INFO' | 'CATEGORIES' | 'PRODUCTS' | 'VIDEOS' | 'TECHNOLOGY' | 'DESIGN' | 'MARKS' | 'HERO' | 'CALCULATOR' | 'CONTACT' | 'MENU' | 'GLOSSARY' | 'ANALYTICS' | 'SETTINGS'>('PRODUCTS');
+
+  // --- Access analytics ---
+  interface AnalyticsStats {
+    total: number;
+    days: number;
+    byDay: { date: string; count: number }[];
+    topPaths: { path: string; count: number }[];
+    topReferrers: { referrer: string; count: number }[];
+    topCountries: { country: string; count: number }[];
+  }
+  const [analytics, setAnalytics] = useState<AnalyticsStats | null>(null);
+  const [analyticsDays, setAnalyticsDays] = useState(30);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'ANALYTICS') return;
+    setAnalyticsLoading(true);
+    fetch(`/api/track/stats?days=${analyticsDays}`)
+      .then(r => r.json())
+      .then(d => setAnalytics(d))
+      .catch(() => setAnalytics(null))
+      .finally(() => setAnalyticsLoading(false));
+  }, [activeTab, analyticsDays]);
 
   // --- Admin password gate ---
   const [authed, setAuthed] = useState<boolean>(() => sessionStorage.getItem('dhweb_admin_authed') === '1');
@@ -546,6 +569,7 @@ const Admin: React.FC = () => {
                 { id: 'CALCULATOR', label: '계산기 설정 (Calculator)' },
                 { id: 'MENU', label: '헤더 메뉴 (Header Menu)' },
                 { id: 'GLOSSARY', label: '용어집/번역 (Glossary)' },
+                { id: 'ANALYTICS', label: '접속 통계 (Analytics)' },
                 { id: 'SETTINGS', label: '설정 (Settings)' },
               ].map(tab => (
                 <button
@@ -2450,6 +2474,128 @@ const Admin: React.FC = () => {
                   <div className="mt-8 p-4 bg-amber-50 text-amber-800 rounded-lg text-sm">
                     * 교정은 영문(ENG) 보기에서만 적용됩니다. 너무 일반적인 단어(예: ‘포장’처럼 여러 뜻이 있는 말)는 의도치 않은 곳까지 바뀔 수 있으니 구체적인 표현으로 등록하세요.
                   </div>
+                </div>
+              );
+            })()}
+
+            {/* --- ANALYTICS TAB --- */}
+            {activeTab === 'ANALYTICS' && (() => {
+              const countryNames: Record<string, string> = {
+                KR: '🇰🇷 대한민국', US: '🇺🇸 미국', JP: '🇯🇵 일본', CN: '🇨🇳 중국', TW: '🇹🇼 대만', HK: '🇭🇰 홍콩',
+                DE: '🇩🇪 독일', FR: '🇫🇷 프랑스', GB: '🇬🇧 영국', ES: '🇪🇸 스페인', IT: '🇮🇹 이탈리아', NL: '🇳🇱 네덜란드',
+                IN: '🇮🇳 인도', SG: '🇸🇬 싱가포르', VN: '🇻🇳 베트남', TH: '🇹🇭 태국', ID: '🇮🇩 인도네시아', MY: '🇲🇾 말레이시아',
+                PH: '🇵🇭 필리핀', RU: '🇷🇺 러시아', CA: '🇨🇦 캐나다', AU: '🇦🇺 호주', BR: '🇧🇷 브라질', unknown: '알 수 없음',
+              };
+              const countryLabel = (c: string) => countryNames[c] || c;
+              const referrerLabel = (r: string) => {
+                if (r === 'direct') return '직접 방문 (주소 입력·즐겨찾기)';
+                if (r === 'internal') return '사이트 내 이동';
+                if (/google\./.test(r) || r === 'google') return 'Google 검색';
+                if (/naver\./.test(r)) return '네이버';
+                if (/daum\.|kakao/.test(r)) return '다음/카카오';
+                if (/bing\./.test(r)) return 'Bing 검색';
+                if (/facebook\./.test(r)) return '페이스북';
+                if (/instagram\./.test(r)) return '인스타그램';
+                if (/youtube\.|youtu\.be/.test(r)) return '유튜브';
+                if (/t\.co|twitter|x\.com/.test(r)) return 'X(트위터)';
+                return r;
+              };
+              const pageLabel = (p: string) => {
+                const m: Record<string, string> = { '/': '홈', '/products': '제품소개', '/certifications': '인증및특허', '/technology': '기술연구소', '/contact': '고객센터' };
+                return m[p] ? `${m[p]} (${p})` : p;
+              };
+              const maxDay = analytics && analytics.byDay.length ? Math.max(...analytics.byDay.map(d => d.count)) : 0;
+              const today = new Date().toISOString().slice(0, 10);
+              const todayCount = analytics ? (analytics.byDay.find(d => d.date === today)?.count || 0) : 0;
+              const avg = analytics && analytics.days ? Math.round(analytics.total / analytics.days) : 0;
+              const Bar = ({ rows, keyName, total }: { rows: any[]; keyName: string; total: number }) => (
+                <div className="space-y-1.5">
+                  {rows.length === 0 && <div className="text-sm text-slate-400 py-4 text-center">데이터 없음</div>}
+                  {rows.map((r, i) => {
+                    const pct = total > 0 ? Math.round((r.count / total) * 100) : 0;
+                    return (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <div className="w-40 shrink-0 truncate text-slate-700" title={String(r.label)}>{r.label}</div>
+                        <div className="flex-1 bg-slate-100 rounded h-5 relative overflow-hidden">
+                          <div className="bg-emerald-500/80 h-full rounded" style={{ width: `${Math.max(pct, 2)}%` }} />
+                        </div>
+                        <div className="w-16 shrink-0 text-right text-slate-500 tabular-nums">{r.count} <span className="text-slate-300">({pct}%)</span></div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+              return (
+                <div className="animate-fade-in-up">
+                  <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-800">📊 접속 통계</h2>
+                      <p className="text-sm text-slate-500 mt-1">방문자의 접속 경로·페이지·국가를 집계합니다. (관리자 페이지 방문은 제외)</p>
+                    </div>
+                    <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                      {[7, 30, 90, 365].map(d => (
+                        <button key={d} onClick={() => setAnalyticsDays(d)} className={`px-3 py-1.5 rounded-md text-sm font-bold transition ${analyticsDays === d ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:bg-slate-200'}`}>
+                          {d === 365 ? '1년' : `${d}일`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {analyticsLoading && <div className="text-center text-slate-400 py-16">불러오는 중...</div>}
+
+                  {!analyticsLoading && analytics && (
+                    <>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                        <div className="bg-white border border-slate-200 rounded-xl p-5">
+                          <div className="text-xs text-slate-400 font-bold">최근 {analytics.days}일 방문</div>
+                          <div className="text-3xl font-extrabold text-slate-800 mt-1">{analytics.total.toLocaleString()}</div>
+                        </div>
+                        <div className="bg-white border border-slate-200 rounded-xl p-5">
+                          <div className="text-xs text-slate-400 font-bold">오늘 방문</div>
+                          <div className="text-3xl font-extrabold text-emerald-600 mt-1">{todayCount.toLocaleString()}</div>
+                        </div>
+                        <div className="bg-white border border-slate-200 rounded-xl p-5">
+                          <div className="text-xs text-slate-400 font-bold">일평균</div>
+                          <div className="text-3xl font-extrabold text-slate-800 mt-1">{avg.toLocaleString()}</div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border border-slate-200 rounded-xl p-5 mb-8">
+                        <h3 className="font-bold text-slate-700 mb-4">일별 방문 추이</h3>
+                        {analytics.byDay.length === 0 ? (
+                          <div className="text-sm text-slate-400 py-8 text-center">아직 집계된 방문이 없습니다.</div>
+                        ) : (
+                          <div className="flex items-end gap-0.5 h-40 overflow-x-auto">
+                            {analytics.byDay.map((d, i) => (
+                              <div key={i} className="flex-1 min-w-[6px] flex flex-col items-center justify-end group relative" title={`${d.date}: ${d.count}`}>
+                                <div className="w-full bg-emerald-400 hover:bg-emerald-600 rounded-t transition-colors" style={{ height: `${maxDay > 0 ? Math.max((d.count / maxDay) * 100, 2) : 0}%` }} />
+                                <div className="absolute -top-6 hidden group-hover:block bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">{d.date} · {d.count}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="bg-white border border-slate-200 rounded-xl p-5">
+                          <h3 className="font-bold text-slate-700 mb-4">유입 경로</h3>
+                          <Bar rows={analytics.topReferrers.map(r => ({ label: referrerLabel(r.referrer), count: r.count }))} keyName="ref" total={analytics.total} />
+                        </div>
+                        <div className="bg-white border border-slate-200 rounded-xl p-5">
+                          <h3 className="font-bold text-slate-700 mb-4">인기 페이지</h3>
+                          <Bar rows={analytics.topPaths.map(r => ({ label: pageLabel(r.path), count: r.count }))} keyName="path" total={analytics.total} />
+                        </div>
+                        <div className="bg-white border border-slate-200 rounded-xl p-5 lg:col-span-2">
+                          <h3 className="font-bold text-slate-700 mb-4">접속 국가</h3>
+                          <Bar rows={analytics.topCountries.map(r => ({ label: countryLabel(r.country), count: r.count }))} keyName="country" total={analytics.total} />
+                        </div>
+                      </div>
+
+                      <div className="mt-6 p-4 bg-slate-50 text-slate-500 rounded-lg text-xs">
+                        * 개인정보(IP·이름 등)는 저장하지 않고, 페이지 경로·유입 출처·국가만 집계합니다. 국가는 대략적인 IP 위치 기준입니다.
+                      </div>
+                    </>
+                  )}
                 </div>
               );
             })()}

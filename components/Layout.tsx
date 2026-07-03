@@ -32,6 +32,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return cleanup;
   }, []);
 
+  // Record a page view for the self-hosted access analytics (skips the admin area).
+  const lastTrackedRef = React.useRef<string>('');
+  useEffect(() => {
+    const p = location.pathname;
+    if (p.startsWith('/admin')) return;
+    if (lastTrackedRef.current === p) return;
+    lastTrackedRef.current = p;
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: p, referrer: document.referrer }),
+      keepalive: true,
+    }).catch(() => {});
+  }, [location.pathname]);
+
   // Scroll to top on route change
   // Scroll to top on route change
   useLayoutEffect(() => {
