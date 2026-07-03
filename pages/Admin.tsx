@@ -1230,18 +1230,23 @@ const Admin: React.FC = () => {
 
                       {useTableSpecs && editingProduct.specTable ? (
                         <div className="overflow-x-auto bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                           {/* Headers Editor */}
-                           <div className="flex gap-2 mb-4 min-w-max pb-2 border-b border-slate-100">
+                           {/* Grid Editor: header row + data rows share the same column tracks so they always align */}
+                           <div
+                             className="grid gap-2 items-center"
+                             style={{ gridTemplateColumns: `1.5rem repeat(${editingProduct.specTable.headers.length}, minmax(120px, 1fr)) 2.5rem` }}
+                           >
+                              {/* --- Header Row --- */}
+                              <div className="mb-2" />
                               {editingProduct.specTable.headers.map((h, i) => (
-                                 <div key={i} className="flex-1 min-w-[120px] relative group">
-                                    <input 
-                                      value={h} 
+                                 <div key={`h-${i}`} className="relative group mb-2">
+                                    <input
+                                      value={h}
                                       onChange={(e) => updateSpecHeader(i, e.target.value)}
                                       className="input-field font-bold bg-slate-50 text-center focus:bg-white"
                                       placeholder={`열 ${i+1}`}
                                     />
-                                    <button 
-                                      type="button" 
+                                    <button
+                                      type="button"
                                       onClick={() => removeSpecColumn(i)}
                                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition shadow-sm z-10 hover:bg-red-600"
                                       title="열 삭제"
@@ -1250,43 +1255,41 @@ const Admin: React.FC = () => {
                                     </button>
                                  </div>
                               ))}
-                              <button 
-                                type="button" 
+                              <button
+                                type="button"
                                 onClick={addSpecColumn}
-                                className="flex items-center justify-center w-10 bg-emerald-100 text-emerald-600 rounded hover:bg-emerald-200 transition"
+                                className="flex items-center justify-center self-stretch mb-2 bg-emerald-100 text-emerald-600 rounded hover:bg-emerald-200 transition"
                                 title="열 추가"
                               >
                                 <Plus size={20} />
                               </button>
-                           </div>
-                           
-                           {/* Rows Editor */}
-                           <div className="space-y-2 min-w-max">
+
+                              {/* --- Data Rows --- */}
                               {editingProduct.specTable.rows.map((row, rIdx) => (
-                                 <div key={rIdx} className="flex gap-2 items-center">
-                                    <div className="text-xs text-slate-300 w-4 text-center">{rIdx + 1}</div>
+                                 <React.Fragment key={`r-${rIdx}`}>
+                                    <div className="text-xs text-slate-300 text-center">{rIdx + 1}</div>
                                     {row.map((cell, cIdx) => (
-                                       <div key={cIdx} className="flex-1 min-w-[120px]">
-                                          <input 
-                                            value={cell} 
+                                       <div key={cIdx}>
+                                          <input
+                                            value={cell}
                                             onChange={(e) => updateSpecCell(rIdx, cIdx, e.target.value)}
                                             className="input-field"
                                           />
                                        </div>
                                     ))}
-                                    <button 
-                                       type="button" 
-                                       onClick={() => removeSpecRow(rIdx)} 
-                                       className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition"
+                                    <button
+                                       type="button"
+                                       onClick={() => removeSpecRow(rIdx)}
+                                       className="flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition h-full"
                                     >
                                        <Trash2 size={16} />
                                     </button>
-                                 </div>
+                                 </React.Fragment>
                               ))}
                            </div>
-                           
-                           <button 
-                             type="button" 
+
+                           <button
+                             type="button"
                              onClick={addSpecRow}
                              className="mt-4 flex items-center gap-2 text-sm font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg hover:bg-emerald-100 transition"
                            >
