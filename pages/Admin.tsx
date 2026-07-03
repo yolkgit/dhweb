@@ -1306,31 +1306,35 @@ const Admin: React.FC = () => {
                           )}
                           {editingProduct.specs && Object.entries(editingProduct.specs).map(([key, val], idx) => (
                             <div key={idx} className="flex gap-2 items-center group">
-                              <div className="w-8 text-center text-xs text-slate-300 font-mono">{idx + 1}</div>
-                              <input 
-                                className="input-field w-1/3 focus:bg-emerald-50 transition-colors" 
-                                value={key} 
-                                onChange={e => {
-                                   const newKey = e.target.value;
-                                   const entries = Object.entries(editingProduct.specs || {});
-                                   const newSpecs: Record<string, string> = {};
-                                   entries.forEach(([k, v]) => {
-                                     if (k === key) newSpecs[newKey] = v as string;
-                                     else newSpecs[k] = v as string;
-                                   });
-                                   setEditingProduct({...editingProduct, specs: newSpecs});
-                                }} 
-                                placeholder="항목명 (예: 포장 단위)" 
-                              />
+                              <div className="w-8 text-center text-xs text-slate-300 font-mono shrink-0">{idx + 1}</div>
+                              <div className="w-1/3 shrink-0">
+                                <input
+                                  className="input-field focus:bg-emerald-50 transition-colors"
+                                  value={key}
+                                  onChange={e => {
+                                     const newKey = e.target.value;
+                                     const entries = Object.entries(editingProduct.specs || {});
+                                     const newSpecs: Record<string, string> = {};
+                                     entries.forEach(([k, v]) => {
+                                       if (k === key) newSpecs[newKey] = v as string;
+                                       else newSpecs[k] = v as string;
+                                     });
+                                     setEditingProduct({...editingProduct, specs: newSpecs});
+                                  }}
+                                  placeholder="항목명 (예: 포장 단위)"
+                                />
+                              </div>
                               <span className="text-slate-400">:</span>
-                              <input 
-                                className="input-field flex-1 focus:bg-emerald-50 transition-colors" 
-                                value={val} 
-                                onChange={e => {
-                                   setEditingProduct({...editingProduct, specs: { ...editingProduct.specs, [key]: e.target.value }});
-                                }} 
-                                placeholder="내용 (예: 25kg)" 
-                              />
+                              <div className="flex-1 min-w-0">
+                                <input
+                                  className="input-field focus:bg-emerald-50 transition-colors"
+                                  value={val}
+                                  onChange={e => {
+                                     setEditingProduct({...editingProduct, specs: { ...editingProduct.specs, [key]: e.target.value }});
+                                  }}
+                                  placeholder="내용 (예: 25kg)"
+                                />
+                              </div>
                               <button type="button" onClick={() => {
                                  const newSpecs = { ...editingProduct.specs };
                                  delete newSpecs[key];
