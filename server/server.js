@@ -1014,7 +1014,7 @@ app.get("*", (req, res) => {
 // Online Inquiry Endpoint (Send Email)
 app.post('/api/inquiry', async (req, res) => {
     try {
-        const { name, phone, email, subject, message } = req.body;
+        const { name, phone, email, region, subject, message } = req.body;
         
         // Fetch Admin Settings & SMTP Config
         const appSettings = await prisma.appSettings.findFirst();
@@ -1056,6 +1056,10 @@ app.post('/api/inquiry', async (req, res) => {
                         <tr>
                             <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #475569;">연락처</td>
                             <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; color: #0f172a;">${phone}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #475569;">지역</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; color: #0f172a;">${region || '-'}</td>
                         </tr>
                         <tr>
                             <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #475569;">이메일</td>

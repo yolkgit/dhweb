@@ -8,9 +8,15 @@ const InquiryModal: React.FC = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [region, setRegion] = useState('');
   const [subject, setSubject] = useState('제품 견적 문의');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const REGIONS = [
+    '서울', '경기', '인천', '강원', '대전', '세종', '충북', '충남',
+    '광주', '전북', '전남', '대구', '경북', '부산', '울산', '경남', '제주', '해외/기타'
+  ];
 
   // Pre-populate fields when inquiryProduct changes
   useEffect(() => {
@@ -32,7 +38,7 @@ const InquiryModal: React.FC = () => {
       const response = await fetch('/api/inquiry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, email, subject, message })
+        body: JSON.stringify({ name, phone, email, region, subject, message })
       });
       const data = await response.json();
       if (!response.ok) {
@@ -44,6 +50,7 @@ const InquiryModal: React.FC = () => {
       setName('');
       setPhone('');
       setEmail('');
+      setRegion('');
       setMessage('');
     } catch (error: any) {
       alert(error.message);
@@ -134,19 +141,34 @@ const InquiryModal: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label htmlFor="modal-subject" className="block text-xs font-bold text-slate-700 mb-1.5">문의 제목 *</label>
-            <select 
-              id="modal-subject" 
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition text-slate-600 bg-white"
-            >
-              <option value="제품 견적 문의">제품 견적 문의</option>
-              <option value="시공 방법 문의">시공 방법 문의</option>
-              <option value="대리점 개설 문의">대리점 개설 문의</option>
-              <option value="기타 문의">기타 문의</option>
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="modal-region" className="block text-xs font-bold text-slate-700 mb-1.5">지역 *</label>
+              <select
+                id="modal-region"
+                required
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className={`w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition bg-white ${region ? 'text-slate-600' : 'text-slate-400'}`}
+              >
+                <option value="" disabled>지역 선택</option>
+                {REGIONS.map(r => <option key={r} value={r} className="text-slate-600">{r}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="modal-subject" className="block text-xs font-bold text-slate-700 mb-1.5">문의 제목 *</label>
+              <select
+                id="modal-subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition text-slate-600 bg-white"
+              >
+                <option value="제품 견적 문의">제품 견적 문의</option>
+                <option value="시공 방법 문의">시공 방법 문의</option>
+                <option value="대리점 개설 문의">대리점 개설 문의</option>
+                <option value="기타 문의">기타 문의</option>
+              </select>
+            </div>
           </div>
 
           <div>
