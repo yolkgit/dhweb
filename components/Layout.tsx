@@ -14,8 +14,18 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [scrolled, setScrolled] = React.useState(false);
-  const { logoSettings, appSettings, currentLang } = useContent();
+  const { logoSettings, appSettings, currentLang, isLoading } = useContent();
   const location = useLocation();
+
+  // Hide the instant HTML loader once the initial data fetch finishes.
+  useEffect(() => {
+    if (isLoading) return;
+    const el = document.getElementById('app-loader');
+    if (el) {
+      el.classList.add('app-loader-hide');
+      setTimeout(() => el.remove(), 350);
+    }
+  }, [isLoading]);
 
   // Keep latest glossary/language available to the DOM corrector without reinstalling it.
   const glossaryRef = React.useRef(appSettings.glossary || []);

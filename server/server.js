@@ -397,6 +397,21 @@ app.post('/api/certifications', async (req, res) => {
         res.json(result);
     } catch(e) { res.status(500).json({error: "Failed"}); }
 });
+// Reorder Certifications (must be before :id route)
+app.put('/api/certifications/reorder', async (req, res) => {
+    try {
+        const ids = req.body;
+        await prisma.$transaction(
+            ids.map((id, index) =>
+                prisma.certification.update({ where: { id }, data: { sortOrder: index } })
+            )
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to reorder certifications" });
+    }
+});
 app.put('/api/certifications/:id', async (req, res) => {
     try {
         const cert = req.body;
@@ -482,6 +497,21 @@ app.post('/api/branches', async (req, res) => {
         });
         res.json(result);
     } catch(e) { res.status(500).json({error: "Failed"}); }
+});
+// Reorder Branches (must be before :id route)
+app.put('/api/branches/reorder', async (req, res) => {
+    try {
+        const ids = req.body;
+        await prisma.$transaction(
+            ids.map((id, index) =>
+                prisma.branch.update({ where: { id }, data: { sortOrder: index } })
+            )
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to reorder branches" });
+    }
 });
 app.put('/api/branches/:id', async (req, res) => {
     try {
@@ -1090,25 +1120,6 @@ app.post('/api/inquiry', async (req, res) => {
 });
 
 
-// Reorder Certifications
-app.put('/api/certifications/reorder', async (req, res) => {
-    try {
-        const ids = req.body;
-        await prisma.$transaction(
-            ids.map((id, index) =>
-                prisma.certification.update({
-                    where: { id },
-                    data: { sortOrder: index }
-                })
-            )
-        );
-        res.json({ success: true });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Failed to reorder certifications" });
-    }
-});
-
 // Reorder Lab Equipments
 app.put('/api/lab-equipments/reorder', async (req, res) => {
     try {
@@ -1128,25 +1139,6 @@ app.put('/api/lab-equipments/reorder', async (req, res) => {
     }
 });
 
-
-// Reorder Branches
-app.put('/api/branches/reorder', async (req, res) => {
-    try {
-        const ids = req.body;
-        await prisma.$transaction(
-            ids.map((id, index) =>
-                prisma.branch.update({
-                    where: { id },
-                    data: { sortOrder: index }
-                })
-            )
-        );
-        res.json({ success: true });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Failed to reorder branches" });
-    }
-});
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on http://0.0.0.0:${PORT}`);
