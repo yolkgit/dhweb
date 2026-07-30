@@ -1034,6 +1034,60 @@ app.get('/api/track/stats', async (req, res) => {
   }
 });
 
+// --- SEO: robots.txt & sitemap.xml (generated per requesting domain) ---
+
+// Build the public origin from the proxy headers so both domains get correct URLs.
+function getOrigin(req) {
+  const proto = (req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
+  const host = (req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+  return `${proto}://${host}`;
+}
+
+app.get('/robots.txt', (req, res) => {
+  const origin = getOrigin(req);
+  const body = [
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /admin',
+    '',
+    `Sitemap: ${origin}/sitemap.xml`,
+    '',
+  ].join('\n');
+  res.type('text/plain').send(body);
+});
+
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const origin = getOrigin(req);
+
+    // Use the admin-configured header menu so the sitemap follows the real site structure.
+    let paths = ['/', '/products', '/certifications', '/technology', '/contact'];
+    try {
+      const settings = await prisma.appSettings.findFirst();
+      if (settings && settings.navItems) {
+        const items = JSON.parse(settings.navItems);
+        const fromNav = items
+          .filter(i => i && i.visible && typeof i.path === 'string' && i.path.startsWith('/') && !i.path.startsWith('/admin'))
+          .map(i => i.path);
+        if (fromNav.length) paths = Array.from(new Set(['/', ...fromNav]));
+      }
+    } catch { /* fall back to the default list */ }
+
+    const lastmod = new Date().toISOString().slice(0, 10);
+    const urls = paths.map(p => {
+      const loc = `${origin}${p === '/' ? '/' : p}`;
+      const priority = p === '/' ? '1.0' : '0.8';
+      return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+    }).join('\n');
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+    res.type('application/xml').send(xml);
+  } catch (error) {
+    console.error('Sitemap error:', error);
+    res.status(500).send('Failed to build sitemap');
+  }
+});
+
 // Serve React App (Catch-All) - Must be after all API routes
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../dist/index.html"));
