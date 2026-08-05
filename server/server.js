@@ -1187,9 +1187,19 @@ app.get('/products/:slug', async (req, res) => {
   }
 });
 
-// Serve React App (Catch-All) - Must be after all API routes
+// Serve React App (Catch-All) - Must be after all API routes.
+// In production the build lives in the client container, so fall back to fetching
+// the app shell from it when ../dist is not present next to the server.
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../dist/index.html"));
+  const localIndex = path.join(__dirname, "../dist/index.html");
+  res.sendFile(localIndex, async (err) => {
+    if (!err) return;
+    try {
+      res.type('html').send(await getAppShell());
+    } catch {
+      res.redirect(302, '/');
+    }
+  });
 });
 
 // Start server
