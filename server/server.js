@@ -1036,6 +1036,16 @@ app.get('/api/track/stats', async (req, res) => {
 
 // --- SEO: robots.txt & sitemap.xml (generated per requesting domain) ---
 
+// Keep in sync with utils/productSlug.ts on the frontend.
+function slugifyProduct(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/[()[\]{}.,/\\|]/g, ' ')
+    .replace(/[^0-9a-z가-힣ㄱ-ㅎㅏ-ㅣ\s-]/g, '')
+    .trim()
+    .replace(/[\s-]+/g, '-');
+}
+
 // Build the public origin from the proxy headers so both domains get correct URLs.
 function getOrigin(req) {
   const proto = (req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
@@ -1073,10 +1083,20 @@ app.get('/sitemap.xml', async (req, res) => {
       }
     } catch { /* fall back to the default list */ }
 
+    // Each product gets its own indexable URL (must match utils/productSlug.ts).
+    try {
+      const products = await prisma.product.findMany({ orderBy: { sortOrder: 'asc' } });
+      const productPaths = products
+        .map(p => slugifyProduct(p.name))
+        .filter(Boolean)
+        .map(s => `/products/${encodeURIComponent(s)}`);
+      paths = paths.concat(productPaths);
+    } catch { /* products are optional for the sitemap */ }
+
     const lastmod = new Date().toISOString().slice(0, 10);
-    const urls = paths.map(p => {
+    const urls = Array.from(new Set(paths)).map(p => {
       const loc = `${origin}${p === '/' ? '/' : p}`;
-      const priority = p === '/' ? '1.0' : '0.8';
+      const priority = p === '/' ? '1.0' : (p.startsWith('/products/') ? '0.7' : '0.8');
       return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
     }).join('\n');
 
@@ -1085,6 +1105,85 @@ app.get('/sitemap.xml', async (req, res) => {
   } catch (error) {
     console.error('Sitemap error:', error);
     res.status(500).send('Failed to build sitemap');
+  }
+});
+
+// --- Per-product SEO HTML ---
+// Search crawlers that do not run JavaScript (notably Naver's Yeti) would otherwise see
+// the same generic shell on every product URL. We fetch the built app shell from the
+// client container and inject product-specific title/description/content into it.
+
+const escapeHtml = (s) => String(s || '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+let shellCache = { html: null, at: 0 };
+async function getAppShell() {
+  if (shellCache.html && Date.now() - shellCache.at < 60000) return shellCache.html;
+  const r = await fetch('http://client/index.html', { signal: AbortSignal.timeout(3000) });
+  if (!r.ok) throw new Error(`shell fetch failed: ${r.status}`);
+  const html = await r.text();
+  shellCache = { html, at: Date.now() };
+  return html;
+}
+
+app.get('/products/:slug', async (req, res) => {
+  try {
+    const slug = decodeURIComponent(req.params.slug || '');
+    const [products, categories] = await Promise.all([
+      prisma.product.findMany(),
+      prisma.category.findMany(),
+    ]);
+    const product = products.find(p => slugifyProduct(p.name) === slug) || products.find(p => p.id === slug);
+    if (!product) return res.redirect(302, '/products');
+
+    const shell = await getAppShell();
+    const catLabel = (categories.find(c => c.id === product.categoryId) || {}).label || '';
+    const features = (() => { try { return JSON.parse(product.features || '[]'); } catch { return []; } })();
+
+    const title = `${product.name}${catLabel ? ` - ${catLabel}` : ''} | 주식회사 다현산업`;
+    const desc = `${product.name} | ${String(product.description || '').slice(0, 150)} 견적 문의 043-883-0602`;
+    const origin = getOrigin(req);
+    const url = `${origin}/products/${encodeURIComponent(slug)}`;
+
+    const jsonLd = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      description: String(product.description || '').slice(0, 300),
+      category: catLabel || undefined,
+      url,
+      brand: { '@type': 'Brand', name: '주식회사 다현산업' },
+      manufacturer: { '@type': 'Organization', name: '주식회사 다현산업', telephone: '+82-43-883-0602' },
+    });
+
+    const crawlerContent = `
+    <noscript>
+      <h1>${escapeHtml(product.name)}</h1>
+      ${catLabel ? `<p>분류: ${escapeHtml(catLabel)}</p>` : ''}
+      <p>${escapeHtml(product.description || '')}</p>
+      ${features.length ? `<h2>주요 특징</h2><ul>${features.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul>` : ''}
+      <p>주식회사 다현산업 | 충북 음성군 삼성면 대덕로 289 | 043-883-0602</p>
+      <p><a href="/products">전체 제품 보기</a></p>
+    </noscript>`;
+
+    let html = shell
+      .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(title)}</title>`)
+      .replace(/(<meta\s+name="description"[\s\S]*?content=")[\s\S]*?(")/, `$1${escapeHtml(desc)}$2`)
+      .replace(/(<meta\s+property="og:title"[\s\S]*?content=")[\s\S]*?(")/, `$1${escapeHtml(title)}$2`)
+      .replace(/(<meta\s+property="og:description"[\s\S]*?content=")[\s\S]*?(")/, `$1${escapeHtml(desc)}$2`)
+      .replace('</head>', `  <link rel="canonical" href="${url}" />\n    <script type="application/ld+json">${jsonLd}</script>\n  </head>`)
+      .replace('<noscript>', `${crawlerContent}\n    <noscript>`);
+
+    res.type('html').send(html);
+  } catch (error) {
+    console.error('Product SEO render error:', error);
+    // Fall back to the plain app shell so users still get a working page.
+    try {
+      res.type('html').send(await getAppShell());
+    } catch {
+      res.redirect(302, '/products');
+    }
   }
 });
 

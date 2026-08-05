@@ -1,18 +1,33 @@
 import React, { useState } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import Section from '../components/Section';
 import { Product } from '../types';
 import { Tag, Leaf, Info, X, Check, FileText, Download } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
 import { usePageSeo } from '../utils/seo';
+import { slugifyProduct, findProductBySlug } from '../utils/productSlug';
 
 const Products: React.FC = () => {
-  usePageSeo(
-    '상온아스콘·도로보수재 제품소개',
-    'RPM 상온아스콘, 수경성 도로보수재, 미끄럼방지 포장재(MMA), 제설제(염화칼슘), 크랙보수테이프 등 도로 유지보수 제품을 소개합니다. 포트홀 긴급보수용 상온아스콘 문의 043-883-0602'
-  );
   const { products, certificationMarks, categories, openInquiryModal } = useContent();
+  const { slug } = useParams<{ slug?: string }>();
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // The detail view is driven by the URL so each product has its own indexable page.
+  const selectedProduct = slug ? findProductBySlug(products, slug) || null : null;
+  const openProduct = (product: Product) => navigate(`/products/${slugifyProduct(product.name)}`);
+  const closeProduct = () => navigate('/products');
+
+  const categoryLabel = (id: string) => categories.find(c => c.id === id)?.label || id;
+
+  usePageSeo(
+    selectedProduct
+      ? `${selectedProduct.name} - ${categoryLabel(selectedProduct.category)}`
+      : '상온아스콘·도로보수재 제품소개',
+    selectedProduct
+      ? `${selectedProduct.name} | ${(selectedProduct.description || '').slice(0, 140)} 제품 문의 043-883-0602`
+      : 'RPM 상온아스콘, 수경성 도로보수재, 미끄럼방지 포장재(MMA), 제설제(염화칼슘), 크랙보수테이프 등 도로 유지보수 제품을 소개합니다. 포트홀 긴급보수용 상온아스콘 문의 043-883-0602'
+  );
 
   // Combine static 'ALL' option with dynamic categories
   const filterCategories = [
@@ -75,7 +90,7 @@ const Products: React.FC = () => {
             return (
               <div key={product.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group border border-slate-100 flex flex-col">
                 {/* Image Container */}
-                <div className="relative h-64 overflow-hidden bg-slate-200 cursor-pointer" onClick={() => setSelectedProduct(product)}>
+                <div className="relative h-64 overflow-hidden bg-slate-200 cursor-pointer" onClick={() => openProduct(product)}>
                   <img 
                     src={product.imageUrl} 
                     alt={product.name} 
@@ -119,7 +134,9 @@ const Products: React.FC = () => {
                       {catLabel}
                     </span>
                     <h3 className="text-2xl font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                      {product.name}
+                      <Link to={`/products/${slugifyProduct(product.name)}`} className="hover:text-emerald-700">
+                        {product.name}
+                      </Link>
                     </h3>
                   </div>
                   
@@ -136,12 +153,12 @@ const Products: React.FC = () => {
                     ))}
                   </div>
 
-                  <button 
-                    onClick={() => setSelectedProduct(product)}
+                  <Link
+                    to={`/products/${slugifyProduct(product.name)}`}
                     className="mt-auto w-full py-3 border border-slate-200 rounded-lg text-slate-600 font-bold hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center"
                   >
                     <Info size={16} className="mr-2" /> 상세 스펙 보기
-                  </button>
+                  </Link>
                 </div>
               </div>
             );
@@ -152,11 +169,11 @@ const Products: React.FC = () => {
       {/* Product Detail Modal */}
       {selectedProduct && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedProduct(null)}></div>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeProduct}></div>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-10 flex flex-col animate-fade-in-up">
             
             <button 
-              onClick={() => setSelectedProduct(null)}
+              onClick={closeProduct}
               className="absolute top-4 right-4 p-2 bg-white/50 hover:bg-white rounded-full text-slate-800 transition-colors z-20"
             >
               <X size={24} />
@@ -297,7 +314,7 @@ const Products: React.FC = () => {
 
               <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end gap-3">
                 <button 
-                  onClick={() => setSelectedProduct(null)}
+                  onClick={closeProduct}
                   className="px-6 py-2 rounded-lg border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 transition"
                 >
                   닫기
