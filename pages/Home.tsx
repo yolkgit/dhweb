@@ -7,6 +7,7 @@ import { HeroSlide } from '../types'; // Ensure types is imported if needed, tho
 // Assuming useContent provides context but we need type for component props.
 // Let's check imports.
 import { useContent } from '../context/ContentContext';
+import { usePageSeo } from '../utils/seo';
 
 // Subcomponent for individual slide logic (video control)
 const HeroSlideItem: React.FC<{
@@ -141,6 +142,10 @@ const CategorySlideshow: React.FC<{ images: string[], categoryLabel: string }> =
 };
 
 const Home: React.FC = () => {
+  usePageSeo(
+    '상온아스콘 · 도로보수재 전문',
+    '포트홀·도로파손 긴급보수용 상온아스콘 RPM 제조사. 도로보수재, 미끄럼방지 포장재(MMA), 제설제(염화칼슘), 크랙보수테이프, 콘크리트 보수재를 공급합니다. 충북 음성 043-883-0602'
+  );
   const { companyInfo, products, playlists, appSettings, heroSlides, currentLang, certificationMarks, categories, openInquiryModal } = useContent();
   
   // State to store fetched videos for each category

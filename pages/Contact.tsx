@@ -2,8 +2,13 @@ import React, { useState } from 'react';
 import Section from '../components/Section';
 import { useContent } from '../context/ContentContext';
 import { MapPin, Phone, Clock, Send, ChevronDown, ChevronUp, MessageSquare, Building } from 'lucide-react';
+import { usePageSeo } from '../utils/seo';
 
 const Contact: React.FC = () => {
+  usePageSeo(
+    '고객센터 · 견적문의',
+    '상온아스콘, 도로보수재, 제설제 견적 및 구매 문의. 주식회사 다현산업 충북 음성군 삼성면 대덕로 289, 전화 043-883-0602'
+  );
   const { companyInfo, branches, currentLang } = useContent();
 
   const handleSubmit = (e: React.FormEvent) => {

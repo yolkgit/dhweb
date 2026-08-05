@@ -3,8 +3,13 @@ import Section from '../components/Section';
 import { Product } from '../types';
 import { Tag, Leaf, Info, X, Check, FileText, Download } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
+import { usePageSeo } from '../utils/seo';
 
 const Products: React.FC = () => {
+  usePageSeo(
+    '상온아스콘·도로보수재 제품소개',
+    'RPM 상온아스콘, 수경성 도로보수재, 미끄럼방지 포장재(MMA), 제설제(염화칼슘), 크랙보수테이프 등 도로 유지보수 제품을 소개합니다. 포트홀 긴급보수용 상온아스콘 문의 043-883-0602'
+  );
   const { products, certificationMarks, categories, openInquiryModal } = useContent();
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);

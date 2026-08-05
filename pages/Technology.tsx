@@ -2,8 +2,13 @@ import React from 'react';
 import Section from '../components/Section';
 import { useContent } from '../context/ContentContext';
 import { IconRenderer } from '../utils/iconMap';
+import { usePageSeo } from '../utils/seo';
 
 const Technology: React.FC = () => {
+  usePageSeo(
+    '기술연구소',
+    '상온아스콘 및 도로보수재의 품질을 검증하는 다현산업 기술연구소의 시험 장비와 연구 역량을 소개합니다.'
+  );
   const { labEquipment } = useContent();
 
   return (

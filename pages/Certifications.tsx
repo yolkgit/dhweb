@@ -3,8 +3,13 @@ import Section from '../components/Section';
 import { useContent } from '../context/ContentContext';
 import { Award, FileText, X, Maximize2 } from 'lucide-react';
 import PdfViewer from '../components/PdfViewer';
+import { usePageSeo } from '../utils/seo';
 
 const Certifications: React.FC = () => {
+  usePageSeo(
+    '인증 및 특허',
+    '상온아스콘·도로보수재 관련 특허 및 공인기관 품질 인증 현황. 주식회사 다현산업이 보유한 기술 특허와 시험성적서를 확인하실 수 있습니다.'
+  );
   const { certifications } = useContent();
   const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
   const [selectedPdfTitle, setSelectedPdfTitle] = useState<string>("");
