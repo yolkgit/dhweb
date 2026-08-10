@@ -959,6 +959,9 @@ app.get("/api/uploads", async (req, res) => {
 
 // Extract the real client IP (behind nginx reverse proxy which sets X-Forwarded-For).
 function getClientIp(req) {
+  // Cloudflare sets CF-Connecting-IP to the true visitor IP.
+  const cf = req.headers['cf-connecting-ip'];
+  if (cf) return String(cf).trim();
   const xff = req.headers['x-forwarded-for'];
   if (xff) return String(xff).split(',')[0].trim();
   return (req.socket && req.socket.remoteAddress) || '';
@@ -985,10 +988,15 @@ app.post('/api/track', async (req, res) => {
     if (p.startsWith('/admin')) return res.json({ ok: true, skipped: true });
     p = p.slice(0, 512);
 
-    const ip = getClientIp(req);
-    const cleanIp = ip.replace(/^::ffff:/, '');
-    const geo = cleanIp ? geoip.lookup(cleanIp) : null;
-    const country = (geo && geo.country) ? geo.country : 'unknown';
+    // Behind Cloudflare the CF-IPCountry header is more accurate than a local GeoIP lookup.
+    const cfCountry = req.headers['cf-ipcountry'];
+    let country = (cfCountry && cfCountry !== 'XX') ? String(cfCountry).toUpperCase() : null;
+    if (!country) {
+      const ip = getClientIp(req);
+      const cleanIp = ip.replace(/^::ffff:/, '');
+      const geo = cleanIp ? geoip.lookup(cleanIp) : null;
+      country = (geo && geo.country) ? geo.country : 'unknown';
+    }
 
     const ownHost = req.headers.host || '';
     const ref = normalizeReferrer(referrer, ownHost).slice(0, 255);
