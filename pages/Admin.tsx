@@ -53,7 +53,11 @@ const Admin: React.FC = () => {
   }, [activeTab, analyticsDays]);
 
   // --- Admin password gate ---
-  const [authed, setAuthed] = useState<boolean>(() => sessionStorage.getItem('dhweb_admin_authed') === '1');
+  // A token is required for every write, so a session without one must log in again
+  // (otherwise saves would fail silently with 403).
+  const [authed, setAuthed] = useState<boolean>(() =>
+    sessionStorage.getItem('dhweb_admin_authed') === '1' && !!sessionStorage.getItem('dhweb_admin_token')
+  );
   const [pwInput, setPwInput] = useState('');
   const [pwError, setPwError] = useState('');
   const [pwChecking, setPwChecking] = useState(false);

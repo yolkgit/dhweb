@@ -62,6 +62,13 @@ interface ContentContextType {
 
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
+// Every write goes through the admin token issued at login; the server rejects
+// unauthenticated writes. Reads need no header.
+export const adminHeaders = (extra: Record<string, string> = {}): Record<string, string> => {
+  const token = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('dhweb_admin_token') : null;
+  return token ? { ...extra, 'x-admin-token': token } : extra;
+};
+
 // API Helper
 const api = {
   get: async () => {
@@ -78,7 +85,7 @@ const api = {
     try {
       await fetch(`/api/data/${key}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(data),
       });
     } catch (e) {
@@ -87,17 +94,17 @@ const api = {
   },
   create: async (endpoint: string, data: any) => {
     try {
-      await fetch(`/api/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      await fetch(`/api/${endpoint}`, { method: 'POST', headers: adminHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(data) });
     } catch (e) { console.error(`Failed to create ${endpoint}`, e); }
   },
   update: async (endpoint: string, id: string | number, data: any) => {
     try {
-      await fetch(`/api/${endpoint}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      await fetch(`/api/${endpoint}/${id}`, { method: 'PUT', headers: adminHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(data) });
     } catch (e) { console.error(`Failed to update ${endpoint}`, e); }
   },
   delete: async (endpoint: string, id: string | number) => {
     try {
-      await fetch(`/api/${endpoint}/${id}`, { method: 'DELETE' });
+      await fetch(`/api/${endpoint}/${id}`, { method: 'DELETE', headers: adminHeaders() });
     } catch (e) { console.error(`Failed to delete ${endpoint}`, e); }
   }
 };
@@ -211,7 +218,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Send just the ordered IDs to the reorder endpoint
     fetch('/api/categories/reorder', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: adminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(orderedCategories.map(c => c.id))
     }).catch(e => console.error('Failed to reorder categories', e));
   };
@@ -233,7 +240,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Send just the ordered IDs to the reorder endpoint
     fetch('/api/products/reorder', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: adminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(orderedProducts.map(p => p.id))
     }).catch(e => console.error('Failed to reorder products', e));
   };
@@ -278,7 +285,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setCertifications(orderedCerts);
     fetch('/api/certifications/reorder', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: adminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(orderedCerts.map(c => c.id))
     }).catch(e => console.error('Failed to reorder certifications', e));
   };
@@ -287,7 +294,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setLabEquipment(orderedItems);
     fetch('/api/lab-equipments/reorder', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: adminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(orderedItems.map(i => i.id))
     }).catch(e => console.error('Failed to reorder lab equipments', e));
   };
@@ -352,7 +359,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setBranches(orderedBranches);
     fetch('/api/branches/reorder', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: adminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(orderedBranches.map(b => b.id))
     }).catch(e => console.error('Failed to reorder branches', e));
   };

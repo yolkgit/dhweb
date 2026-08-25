@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { Upload, X, Link as LinkIcon, Film, Play } from 'lucide-react';
+import { adminHeaders } from '../context/ContentContext';
 
 interface VideoInputProps {
   label: string;
@@ -25,6 +26,7 @@ const VideoInput: React.FC<VideoInputProps> = ({ label, value, onChange }) => {
       try {
         const res = await fetch('/api/upload', {
           method: 'POST',
+          headers: adminHeaders(),
           body: formData,
         });
 

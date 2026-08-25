@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Upload, X, Link as LinkIcon, Image as ImageIcon, FolderOpen } from 'lucide-react';
 import FileSelectorModal from './FileSelectorModal';
+import { adminHeaders } from '../context/ContentContext';
 
 interface ImageInputProps {
   label: string;
@@ -28,6 +29,7 @@ const ImageInput: React.FC<ImageInputProps> = ({ label, value, onChange }) => {
           // Upload to server
           const res = await fetch('/api/upload', {
             method: 'POST',
+            headers: adminHeaders(),
             body: formData,
           });
           

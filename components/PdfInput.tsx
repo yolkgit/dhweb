@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Upload, X, FileText, Eye, FolderOpen } from 'lucide-react';
 import FileSelectorModal from './FileSelectorModal';
+import { adminHeaders } from '../context/ContentContext';
 
 interface PdfInputProps {
   label: string;
@@ -32,6 +33,7 @@ const PdfInput: React.FC<PdfInputProps> = ({ label, value, onChange }) => {
       try {
         const res = await fetch('/api/upload', {
           method: 'POST',
+          headers: adminHeaders(),
           body: formData,
         });
 
