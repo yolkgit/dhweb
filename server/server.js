@@ -5,6 +5,7 @@ import multer from "multer";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import crypto from "crypto";
 import { PrismaClient } from '@prisma/client';
 import geoip from 'geoip-lite';
 
@@ -119,9 +120,14 @@ app.get('/api/content', async (req, res) => {
          vision: JSON.parse(companyInfo.vision || '[]')
      } : {};
 
-     // Strip the admin password from the public payload; parse JSON fields for the frontend.
+     // /api/content is public. Never include secrets here: the admin password and the
+     // SMTP credentials are server-side only (mail is sent by this server, the browser
+     // never needs them). The admin page loads them separately via /api/admin/settings.
      const safeAppSettings = appSettings ? (() => {
-         const { adminPassword, navItems, glossary, ...rest } = appSettings;
+         const {
+             adminPassword, smtpHost, smtpPort, smtpUser, smtpPass,
+             navItems, glossary, ...rest
+         } = appSettings;
          return {
              ...rest,
              navItems: navItems ? JSON.parse(navItems) : null,
@@ -595,16 +601,57 @@ app.post('/api/app-settings', async (req, res) => {
 });
 
 // --- Admin Password Auth ---
+// Short-lived tokens issued on login, so the admin page can read the settings that
+// are withheld from the public API without keeping the password in the browser.
+const adminTokens = new Map(); // token -> expiry (ms)
+const ADMIN_TOKEN_TTL = 12 * 60 * 60 * 1000;
+
+function issueAdminToken() {
+    const token = crypto.randomBytes(24).toString('hex');
+    adminTokens.set(token, Date.now() + ADMIN_TOKEN_TTL);
+    // Opportunistic cleanup so the map cannot grow without bound.
+    for (const [t, exp] of adminTokens) if (exp < Date.now()) adminTokens.delete(t);
+    return token;
+}
+
+function isValidAdminToken(req) {
+    const token = req.headers['x-admin-token'];
+    if (!token) return false;
+    const exp = adminTokens.get(String(token));
+    if (!exp) return false;
+    if (exp < Date.now()) { adminTokens.delete(String(token)); return false; }
+    return true;
+}
+
 // Verify admin password (server-side; never exposed via /api/content).
 app.post('/api/admin/verify', async (req, res) => {
     try {
         const { password } = req.body;
         const settings = await prisma.appSettings.findFirst();
         const stored = (settings && settings.adminPassword) ? settings.adminPassword : '0000';
-        res.json({ ok: String(password) === String(stored) });
+        const ok = String(password) === String(stored);
+        res.json(ok ? { ok: true, token: issueAdminToken() } : { ok: false });
     } catch (error) {
         console.error("Admin verify error:", error);
         res.status(500).json({ error: "Failed to verify" });
+    }
+});
+
+// Settings the public API withholds (SMTP credentials). Requires a login token.
+app.get('/api/admin/settings', async (req, res) => {
+    if (!isValidAdminToken(req)) return res.status(403).json({ error: 'unauthorized' });
+    try {
+        const s = await prisma.appSettings.findFirst();
+        if (!s) return res.json({});
+        res.json({
+            smtpHost: s.smtpHost || '',
+            smtpPort: s.smtpPort || '',
+            smtpUser: s.smtpUser || '',
+            smtpPass: s.smtpPass || ''
+        });
+    } catch (error) {
+        console.error('Admin settings error:', error);
+        res.status(500).json({ error: 'Failed to load settings' });
     }
 });
 

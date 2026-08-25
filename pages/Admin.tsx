@@ -58,6 +58,26 @@ const Admin: React.FC = () => {
   const [pwError, setPwError] = useState('');
   const [pwChecking, setPwChecking] = useState(false);
 
+  // SMTP credentials are withheld from the public API, so the admin page fetches them
+  // separately with its login token. Kept in local state; saving merges them back.
+  const [secretSettings, setSecretSettings] = useState<{ smtpHost?: string; smtpPort?: number | string; smtpUser?: string; smtpPass?: string }>({});
+  useEffect(() => {
+    if (!authed) return;
+    const token = sessionStorage.getItem('dhweb_admin_token');
+    if (!token) return;
+    fetch('/api/admin/settings', { headers: { 'x-admin-token': token } })
+      .then(r => (r.ok ? r.json() : {}))
+      .then(d => setSecretSettings(d || {}))
+      .catch(() => {});
+  }, [authed]);
+
+  // Writes an SMTP field: merge the secret values back so saving never wipes them.
+  const updateSmtp = (patch: Record<string, any>) => {
+    const next = { ...secretSettings, ...patch };
+    setSecretSettings(next);
+    updateAppSettings({ ...appSettings, ...next } as any);
+  };
+
   // --- Change password form ---
   const [curPw, setCurPw] = useState('');
   const [newPw, setNewPw] = useState('');
@@ -77,6 +97,7 @@ const Admin: React.FC = () => {
       const data = await res.json();
       if (data.ok) {
         sessionStorage.setItem('dhweb_admin_authed', '1');
+        if (data.token) sessionStorage.setItem('dhweb_admin_token', data.token);
         setAuthed(true);
         setPwInput('');
       } else {
@@ -535,7 +556,7 @@ const Admin: React.FC = () => {
           <div className="flex gap-3">
              <Link
                to="/"
-               onClick={() => { sessionStorage.removeItem('dhweb_admin_authed'); setAuthed(false); }}
+               onClick={() => { sessionStorage.removeItem('dhweb_admin_authed'); sessionStorage.removeItem('dhweb_admin_token'); setAuthed(false); }}
                className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 border border-slate-700 rounded-lg hover:bg-slate-700 hover:text-white transition font-bold text-sm"
              >
                <LogOut size={16} /> 나가기
@@ -1958,21 +1979,21 @@ const Admin: React.FC = () => {
                       <div className="grid grid-cols-2 gap-4 mb-4">
                         <div>
                           <label className="label text-xs">SMTP Host</label>
-                          <input type="text" value={appSettings.smtpHost || ''} onChange={(e) => updateAppSettings({...appSettings, smtpHost: e.target.value})} className="input-field text-sm" placeholder="smtp.gmail.com" />
+                          <input type="text" value={secretSettings.smtpHost || ''} onChange={(e) => updateSmtp({ smtpHost: e.target.value })} className="input-field text-sm" placeholder="smtp.gmail.com" />
                         </div>
                         <div>
                           <label className="label text-xs">SMTP Port</label>
-                          <input type="number" value={appSettings.smtpPort || ''} onChange={(e) => updateAppSettings({...appSettings, smtpPort: parseInt(e.target.value, 10)})} className="input-field text-sm" placeholder="465" />
+                          <input type="number" value={secretSettings.smtpPort || ''} onChange={(e) => updateSmtp({ smtpPort: parseInt(e.target.value, 10) })} className="input-field text-sm" placeholder="465" />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="label text-xs">SMTP 아이디(이메일)</label>
-                          <input type="text" value={appSettings.smtpUser || ''} onChange={(e) => updateAppSettings({...appSettings, smtpUser: e.target.value})} className="input-field text-sm" placeholder="user@gmail.com" />
+                          <input type="text" value={secretSettings.smtpUser || ''} onChange={(e) => updateSmtp({ smtpUser: e.target.value })} className="input-field text-sm" placeholder="user@gmail.com" />
                         </div>
                         <div>
                           <label className="label text-xs">SMTP 비밀번호(앱 비밀번호)</label>
-                          <input type="password" value={appSettings.smtpPass || ''} onChange={(e) => updateAppSettings({...appSettings, smtpPass: e.target.value})} className="input-field text-sm" placeholder="password" />
+                          <input type="password" value={secretSettings.smtpPass || ''} onChange={(e) => updateSmtp({ smtpPass: e.target.value })} className="input-field text-sm" placeholder="password" />
                         </div>
                       </div>
                     </div>
